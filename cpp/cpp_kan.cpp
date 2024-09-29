@@ -24,7 +24,7 @@ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* kn
 }
 
 
-at::Tensor kan_activation_function(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor controlPoints){
+at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor controlPoints){
 
     TORCH_CHECK(wb.sizes() == ws.sizes());
     TORCH_CHECK(x.dtype() == at::kFloat);

@@ -2,6 +2,8 @@ import torch
 import torch
 import torch.nn as nn
 import numpy as np
+import cuda_kan
+import cpp_kan
 
 class KolmogorovArnoldLayer(nn.Module):
     def __init__(self, input_dim, num_functions, num_knots, degree=3):
@@ -14,13 +16,14 @@ class KolmogorovArnoldLayer(nn.Module):
 
         # Create random knot vector and control points
         self.knots = np.linspace(0, 1, num_knots + degree + 1)
-        self.control_points = np.random.rand(num_functions, input_dim, num_knots)
+        self.cps = np.random.rand(num_functions, input_dim, num_knots)
 
+    def forward(self, x :torch.Tensor):
 
-
-    def forward(self, x):
-        #TODO: call CPP/CUDA KAN LAYER
-
+        if x.is_cuda:
+            output = cuda_kan.kan_layer(x, wb, ws, knots, cps)
+        else:
+            output = cpp_kan.kan_layer(x, wb, ws, knots, cps)
 
         return output
 

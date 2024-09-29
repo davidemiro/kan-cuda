@@ -8,8 +8,8 @@
 #include <cmath>
 #include "cpp/spline.cpp"
 
-#define MAX_CUDA_BLOCK 65535
-#define MAX_CUDA_THREADS_X_BLOCK 1024
+#define MAX_DIM 1024
+
 
 using namespace std;
 
@@ -26,23 +26,31 @@ __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws
     int j = blockIdx.y;
     int z = blockIdx.z;
     if(i < N){
-        //TODO: implement b_spline
-        y[i] = wb[j]*silu(x[i]) + ws[j]*b_spline(x[z][i],controlPoints, knots,k);
+        //TODO: sum
+        y[z][i] = wb[j]*silu(x[i]) + ws[j]*b_spline(x[z][i],controlPoints, knots,k);
     }
 
 }
 
 
-at::Tensor kan_activation_function(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor controlPoints){
+at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor controlPoints){
 
     TORCH_CHECK(wb.sizes() == ws.sizes());
-    TORCH_CHECK(wb.sizes() * x.size() / MAX_CUDA_THREADS_X_BLOCK < MAX_CUDA_BLOCK); //TODO: review check
+    TORCH_CHECK(wb.sizes() < MAX_DIM); //TODO: review check
+    TORCH_CHECK(knots.sizes() < MAX_DIM);
+    TORCH_CHECK(controlPoints.sizes() < MAX_DIM);
+
+
     TORCH_CHECK(x.dtype() == at::kFloat);
     TORCH_CHECK(wb.dtype() == at::kFloat);
     TORCH_CHECK(ws.dtype() == at::kFloat);
+
     TORCH_INTERNAL_ASSERT(x.device().type() == at::DeviceType::CUDA);
     TORCH_INTERNAL_ASSERT(wb.device().type() == at::DeviceType::CUDA);
     TORCH_INTERNAL_ASSERT(ws.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(knots.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(controlPoints.device().type() == at::DeviceType::CUDA);
+
 
     at::Tensor x_contig = x.contiguous();
     at::Tensor wb_contig = wb.contiguous();
