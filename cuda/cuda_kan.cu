@@ -21,24 +21,24 @@ float silu(float x){
     return 1/(1 + expf(x*-1));
 
 }
-__global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* controlPoints, float* knots, int k, int N){
+__global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* knots, int k, int N){
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y;
     int z = blockIdx.z;
     if(i < N){
         //TODO: sum
-        y[z][i] = wb[j]*silu(x[i]) + ws[j]*b_spline(x[z][i],controlPoints, knots,k);
+        y[z][i] = y[z][i] + wb[j]*silu(x[i]) + ws[j]*b_spline(x[z][i], cps, knots, k);
     }
 
 }
 
 
-at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor controlPoints){
+at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps){
 
     TORCH_CHECK(wb.sizes() == ws.sizes());
     TORCH_CHECK(wb.sizes() < MAX_DIM); //TODO: review check
     TORCH_CHECK(knots.sizes() < MAX_DIM);
-    TORCH_CHECK(controlPoints.sizes() < MAX_DIM);
+    TORCH_CHECK(cps.sizes() < MAX_DIM);
 
 
     TORCH_CHECK(x.dtype() == at::kFloat);
@@ -49,21 +49,20 @@ at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knot
     TORCH_INTERNAL_ASSERT(wb.device().type() == at::DeviceType::CUDA);
     TORCH_INTERNAL_ASSERT(ws.device().type() == at::DeviceType::CUDA);
     TORCH_INTERNAL_ASSERT(knots.device().type() == at::DeviceType::CUDA);
-    TORCH_INTERNAL_ASSERT(controlPoints.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(cps.device().type() == at::DeviceType::CUDA);
 
 
     at::Tensor x_contig = x.contiguous();
     at::Tensor wb_contig = wb.contiguous();
     at::Tensor ws_contig = ws.contiguous();
-    at::Tensor controlPoints_contig = controlPoints.contiguous();
+    at::Tensor cps_contig = controlPoints.contiguous();
     at::Tensor knots_contig = knots.contiguous();
-
-    at::Tensor y = torch::empty(wb_contig.sizes(), wb_contig.options());
+    at::Tensor y = torch::zeros(x_contig.sizes(), wb_contig.options());
 
     const float* x_ptr = x_contig.data_ptr<float>();
     const float* wb_ptr = wb_contig.data_ptr<float>();
     const float* ws_ptr = ws_contig.data_ptr<float>();
-    const float* controlPoints_ptr = controlPoints_contig.data_ptr<float>();
+    const float* cps_ptr = controlPoints_contig.data_ptr<float>();
     const float* knots_ptr = knots_contig.data_ptr<float>();
 
     float* y_ptr = y.data_ptr<float>();
@@ -76,7 +75,7 @@ at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knot
     int num_threads = 1024; //max number of threads x bloc
     dim3 num_blocks(N /1024,M, batch_size) // num_input x num_activations x batch_size
 
-    kan_activation_function<<<num_blocks, num_threads>>>(x_ptr,y_ptr,wb_ptr,ws_ptr,controlPoints_ptr,knots_ptr,k,N);
+    kan_activation_function<<<num_blocks, num_threads>>>(x_ptr,y_ptr,wb_ptr,ws_ptr,cps_ptr,knots_ptr,k,N);
 
 
     return y;
@@ -86,7 +85,7 @@ at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knot
 }
 
 TORCH_LIBRARY_IMPL(extension_cpp, CUDA, m) {
-m.impl("kan_activation_function", &kan_activation_function);
+m.impl("kan_layer", &kan_layer);
 }
 
 

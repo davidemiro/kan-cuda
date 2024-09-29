@@ -19,12 +19,12 @@ float silu(float x){
 }
 
 
-void kan_activation_function(float* x, float* y, float* wb, float* ws, float* knots, float* controlPoints, int k, int N, int i, int j, int z){
-    y[z][i] = wb[j]*silu(x[z][i]) + ws[j]*b_spline(x[z][i],controlPoints, knots,k);
+void kan_activation_function(float* x, float* y, float* wb, float* ws, float* knots, float* cps, int k, int N, int i, int j, int z){
+    y[z][i] = y[z][i] + wb[j]*silu(x[z][i]) + ws[j]*b_spline(x[z][i],cps, knots,k);
 }
 
 
-at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor controlPoints){
+at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps){
 
     TORCH_CHECK(wb.sizes() == ws.sizes());
     TORCH_CHECK(x.dtype() == at::kFloat);
@@ -37,16 +37,16 @@ at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knot
     at::Tensor x_contig = x.contiguous();
     at::Tensor wb_contig = wb.contiguous();
     at::Tensor ws_contig = ws.contiguous();
-    at::Tensor controlPoints_contig = controlPoints.contiguous();
+    at::Tensor cps_contig = cps.contiguous();
     at::Tensor knots_contig = knots.contiguous();
 
 
-    at::Tensor y = torch::empty(wb_contig.sizes(), wb_contig.options());
+    at::Tensor y = torch::zeros(x_contig.sizes(), x_contig.options());
 
     const float* x_ptr = x_contig.data_ptr<float>();
     const float* wb_ptr = wb_contig.data_ptr<float>();
     const float* ws_ptr = ws_contig.data_ptr<float>();
-    const float* controlPoints_ptr = controlPoints_contig.data_ptr<float>();
+    const float* cps_ptr = cps_contig.data_ptr<float>();
     const float* knots_ptr = knots_contig.data_ptr<float>();
 
     float* y_ptr = y.data_ptr<float>();
@@ -61,7 +61,7 @@ at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knot
     for(int64_t z = 0; z < batch_size(); z++) {
         for (int64_t i = 0; i < x.numel(); i++) {
             for (int64_t j = 0; j < wb.numel(); j++) {
-                kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, knots_ptr, controlPoints_ptr, k, N, i, j,
+                kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, knots_ptr, cps_ptr, k, N, i, j,
                                         z);
             }
         }
@@ -78,5 +78,5 @@ at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knot
 }
 
 TORCH_LIBRARY_IMPL(extension_cpp, CUDA, m) {
-m.impl("kan_activation_function", &kan_activation_function);
+m.impl("kan_layer", &kan_layer);
 }
