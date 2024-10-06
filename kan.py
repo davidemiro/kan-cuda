@@ -1,8 +1,7 @@
 import torch
-import torch
 import torch.nn as nn
 import numpy as np
-import cuda_kan
+#import cuda_kan
 import cpp_kan
 
 class KolmogorovArnoldLayer(nn.Module):
@@ -26,6 +25,13 @@ class KolmogorovArnoldLayer(nn.Module):
             output = cpp_kan.kan_layer(x, wb, ws, knots, cps)
 
         return output
+
+
+x = torch.Tensor([1.0, 2.0, 3.0])
+
+layer = KolmogorovArnoldLayer(3,3,3)
+
+print(layer(x))
 
 
 

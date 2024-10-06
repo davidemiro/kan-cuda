@@ -6,6 +6,11 @@
 #include <vector>
 #include <cuda_runtime.h>
 #include <cmath>
+#include <torch/extension.h>
+#include <pybind11/pybind11.h>
+#include <ATen/ATen.h>
+
+
 #include "cpp/spline.cpp"
 
 #define MAX_DIM 1024
@@ -26,8 +31,7 @@ __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws
     int j = blockIdx.y;
     int z = blockIdx.z;
     if(i < N){
-        //TODO: sum
-        y[z][i] = y[z][i] + wb[j]*silu(x[i]) + ws[j]*b_spline(x[z][i], cps, knots, k);
+        y[z][j] = y[z][j] + wb[j]*silu(x[i]) + ws[j]*b_spline(x[z][i], cps, knots, k);
     }
 
 }
@@ -44,6 +48,8 @@ at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knot
     TORCH_CHECK(x.dtype() == at::kFloat);
     TORCH_CHECK(wb.dtype() == at::kFloat);
     TORCH_CHECK(ws.dtype() == at::kFloat);
+    TORCH_CHECK(wb.dtype() == at::knots);
+    TORCH_CHECK(ws.dtype() == at::cps);
 
     TORCH_INTERNAL_ASSERT(x.device().type() == at::DeviceType::CUDA);
     TORCH_INTERNAL_ASSERT(wb.device().type() == at::DeviceType::CUDA);
@@ -57,7 +63,8 @@ at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knot
     at::Tensor ws_contig = ws.contiguous();
     at::Tensor cps_contig = controlPoints.contiguous();
     at::Tensor knots_contig = knots.contiguous();
-    at::Tensor y = torch::zeros(x_contig.sizes(), wb_contig.options());
+
+    at::Tensor y = torch::zeros({x.size(0),wb.size(0)}, wb_contig.options());
 
     const float* x_ptr = x_contig.data_ptr<float>();
     const float* wb_ptr = wb_contig.data_ptr<float>();
@@ -69,11 +76,11 @@ at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knot
 
     int N = x.size();
     int M = x.size();
-    //TODO: define batch_size
-    int batch_size = 128
+    //TODO: k deve essere passato come argomento
+    int k = 3
 
     int num_threads = 1024; //max number of threads x bloc
-    dim3 num_blocks(N /1024,M, batch_size) // num_input x num_activations x batch_size
+    dim3 num_blocks(N /1024,M, x.size(0)) // num_input x num_activations x batch_size
 
     kan_activation_function<<<num_blocks, num_threads>>>(x_ptr,y_ptr,wb_ptr,ws_ptr,cps_ptr,knots_ptr,k,N);
 
