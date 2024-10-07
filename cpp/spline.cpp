@@ -2,8 +2,14 @@
 // Created by davide miro on 24/09/24.
 //
 
+#include <iostream>
+#include <cmath>
+#include <torch/extension.h>
+#include <ATen/ATen.h>
 
-void bSplineBasis(int i, int d, double t, const vector<double>& knots) {
+using namespace std;
+
+float bSplineBasis(int i, int d, double t, const float* knots) {
     if (d == 0) {
         // Base case: piecewise constant function (degree 0)
         if (knots[i] <= t && t < knots[i + 1]) {
@@ -30,9 +36,8 @@ void bSplineBasis(int i, int d, double t, const vector<double>& knots) {
     }
 }
 
-float b_spline(float t, float* controlPoints, float* knots, int degree){
+float b_spline(float t, int n, const float* controlPoints, const float* knots, int degree){
     float result = 0.0;
-    int n = controlPoints.size();
 
     for (int i = 0; i < n; ++i) {
         float basisValue = bSplineBasis(i, degree, t, knots);
