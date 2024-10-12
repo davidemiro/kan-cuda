@@ -11,7 +11,7 @@
 #include <ATen/ATen.h>
 
 
-#include "cpp/spline.cpp"
+#include "spline.cpp"
 
 #define MAX_DIM 1024
 
@@ -54,7 +54,7 @@ namespace cuda_kan {
         int j = blockIdx.y;
         int z = blockIdx.z;
         if (i < N) {
-            y[z][j] = y[z][j] + wb[j] * silu(x[i]) + ws[j] * b_spline(x[z][i], N, cps, knots, k);
+            y[z][j] = y[z][j] + wb[j] * silu(x[z][i]) + ws[j] * b_spline(x[z][i], N, cps, knots, k);
         }
 
     }
@@ -83,7 +83,7 @@ namespace cuda_kan {
         at::Tensor x_contig = x.contiguous();
         at::Tensor wb_contig = wb.contiguous();
         at::Tensor ws_contig = ws.contiguous();
-        at::Tensor cps_contig = controlPoints.contiguous();
+        at::Tensor cps_contig = cps.contiguous();
         at::Tensor knots_contig = knots.contiguous();
 
         at::Tensor y = torch::zeros({x.size(0), wb.size(0)}, wb_contig.options());
@@ -91,17 +91,19 @@ namespace cuda_kan {
         float **x_ptr = tensor_to_float_ptr(x_contig);
         const float *wb_ptr = wb_contig.data_ptr<float>();
         const float *ws_ptr = ws_contig.data_ptr<float>();
-        const float *cps_ptr = controlPoints_contig.data_ptr<float>();
+        const float *cps_ptr = cps_contig.data_ptr<float>();
         const float *knots_ptr = knots_contig.data_ptr<float>();
 
         float **y_ptr = tensor_to_float_ptr(y);
 
         int num_cps = cps.size(0);
         //TODO: k deve essere passato come argomento
-        int k = 3
-
+        int k = 3; //degree
+        int num_input = x.size(1);
+        int num_activations = wb.size(0);
         int num_threads = 1024; //max number of threads x bloc
-        dim3 num_blocks(N / 1024, M, x.size(0)) // num_input x num_activations x batch_size
+
+        dim3 num_blocks(num_input / 1024, num_activations, x.size(0)); // num_input x num_activations x batch_size
 
         kan_activation_function<<<num_blocks, num_threads>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, knots_ptr, k,
                                                              num_cps);
