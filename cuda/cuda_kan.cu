@@ -49,7 +49,7 @@ namespace cuda_kan {
         return float_ptr;
     }
 
-    __global__ void kan_activation_function(float *x, float *y, const float *wb, const float *ws, const float *cps, const float *knots, int k, int N) {
+    __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, const float *knots, int k, int N) {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
         int j = blockIdx.y;
         int z = blockIdx.z;
