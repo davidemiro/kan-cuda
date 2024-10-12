@@ -21,7 +21,7 @@ using namespace std;
 
 namespace cuda_kan {
 
-    __device__ float silu(float *x, int i) {
+    __device__ float silu(float x) {
         return 1 / (1 + expf(x[i] * -1));
 
     }
