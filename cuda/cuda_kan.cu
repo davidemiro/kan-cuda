@@ -11,7 +11,7 @@
 #include <ATen/ATen.h>
 
 
-#include "spline.cpp"
+#include "spline.cu"
 
 #define MAX_DIM 1024
 
@@ -25,6 +25,8 @@ namespace cuda_kan {
         return 1 / (1 + expf(x * -1));
 
     }
+
+
 
     float **tensor_to_float_ptr(at::Tensor x) {
         // Ensure the tensor is of type float and has 2 dimensions (batch_size, length)
@@ -49,12 +51,14 @@ namespace cuda_kan {
         return float_ptr;
     }
 
-    __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, const float *knots, int k, int N) {
+    __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, const float *knots, const float ***bSplineBasis, int k, int N) {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
         int j = blockIdx.y;
         int z = blockIdx.z;
+        float result = 0.0;
         if (i < N) {
-            y[z][j] = y[z][j] + wb[j] * silu(x[z][i]) + ws[j] * b_spline(x[z][i], N, cps, knots, k);
+            result = wb[j] * silu(x[z][i]) + ws[j] * b_spline(i, cps, knots, bSplineBasis, k);
+            atomicAdd(&y[z][i], result);
         }
 
     }
@@ -96,8 +100,9 @@ namespace cuda_kan {
 
         float **y_ptr = tensor_to_float_ptr(y);
 
-        int num_cps = cps.size(0);
-        //TODO: k deve essere passato come argomento
+
+
+        //TODO: k as argument of CUDA/CPP function
         int k = 3; //degree
         int num_input = x.size(1);
         int num_activations = wb.size(0);
@@ -106,7 +111,7 @@ namespace cuda_kan {
         dim3 num_blocks(num_input / 1024, num_activations, x.size(0)); // num_input x num_activations x batch_size
 
         kan_activation_function<<<num_blocks, num_threads>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, knots_ptr, k,
-                                                             num_cps);
+                                                             num_activations);
 
 
         return y;
