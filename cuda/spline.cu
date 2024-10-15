@@ -9,56 +9,60 @@
 
 using namespace std;
 
-__device__ void bSplineBasis(float*** bSplineBasis, float** x, int num_input, int num_activations, int degree,const float* knots) {
-    int z = threadIdx.x;
+__device__ void bSplineBasis(float*** bSplineBasis, float** x, int batch_size, int num_input, int num_activations, int degree,const float* knots) {
+    int z = blockIdx.x * blockDim.x + threadIdx.x;
+    int i = blockIdx.x * blockDim.x + threadIdx.y;
     float t;
     double leftTerm = 0.0;
     double rightTerm = 0.0;
 
-    for(int i = 0; i < num_input; i++){ //TODO: we can parallelize this dimension ?
-        for(int j = 0; j < num_activations; i++){
-            for(int d = 0; d < degree; d++ ){
-                t = x[z][i];
-                if (d == 0) {
-                    // Base case: piecewise constant function (degree 0)
-                    if (knots[j] <= t && t < knots[j + 1]) {
-                        bSplineBasis[z][i][j][d] = 1.0;
-                    } else {
-                        bSplineBasis[z][i][j][d] = 0.0;
-                    }
-                } else {
-
-
-                    // Check the left term (avoid division by zero)
-                    if (knots[j + d] != knots[j]) {
-                        leftTerm = (t - knots[j]) / (knots[j + d] - knots[j]) * bSplineBasis[z][i][j][d - 1];
-                    }
-
-                    // Check the right term (avoid division by zero)
-                    if (knots[j + d + 1] != knots[j + 1]) {
-                        rightTerm = (knots[j + d + 1] - t) / (knots[j + d + 1] - knots[j + 1]) *
-                                    bSplineBasis[z][i][j + 1][d - 1];
-                    }
-
-                    bSplineBasis[z][i][j][d] = leftTerm + rightTerm;
-                }
-            }
-        }
+    if(z >= batch_size || i >= num_input){
+        return;
     }
 
+    for(int d = 0; d < degree; d++) {
+        for (int j = 0; j < num_activations; i++) {
+
+            t = x[z][i];
+            if (d == 0) {
+                // Base case: piecewise constant function (degree 0)
+                if (knots[j] <= t && t < knots[j + 1]) {
+                    bSplineBasis[z][i][j][d] = 1.0;
+                } else {
+                    bSplineBasis[z][i][j][d] = 0.0;
+                }
+            } else {
 
 
+                // Check the left term (avoid division by zero)
+                if (knots[j + d] != knots[j]) {
+                    leftTerm = (t - knots[j]) / (knots[j + d] - knots[j]) * bSplineBasis[z][i][j][d - 1];
+                }
+
+                // Check the right term (avoid division by zero)
+                if (knots[j + d + 1] != knots[j + 1]) {
+                    rightTerm = (knots[j + d + 1] - t) / (knots[j + d + 1] - knots[j + 1]) *
+                                bSplineBasis[z][i][j + 1][d - 1];
+                }
+
+                bSplineBasis[z][i][j][d] = leftTerm + rightTerm;
+            }
+
+        }
+
+    }
 }
 
 //TODO develop in CUDA
-__global__ void b_spline(float* result, const float* cps, const float* knots, const float*** bSplineBasis, int j, int k){
-    int j = threadIdx.x;
+__global__ void b_spline(float* result, const float* cps, const float* knots, const float*** bSplineBasis, int i, int k){
+    int z = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.x * blockDim.x + threadIdx.y;
     /*
-     * z : z-th batch element TODO
+     * z : z-th batch element
      * i : i-th element of the input
      * j : j-th activation function
      * k : degree
      */
-    atomicAdd(&result, cps[i] * bSplineBasis[i][j][k];);
+    atomicAdd(&result, cps[i] * bSplineBasis[z][i][j][k]);
 }
 

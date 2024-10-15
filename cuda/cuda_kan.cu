@@ -9,6 +9,7 @@
 #include <torch/extension.h>
 #include <pybind11/pybind11.h>
 #include <ATen/ATen.h>
+#include <algorithm>
 
 
 #include "spline.cu"
@@ -51,20 +52,29 @@ namespace cuda_kan {
         return float_ptr;
     }
 
-    __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, const float *knots, const float ***bSplineBasis, int k, int N) {
-        int i = blockIdx.x * blockDim.x + threadIdx.x;
-        int j = blockIdx.y;
-        int z = blockIdx.z;
+    __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, const float *knots, const float ***bSplineBasis, int k, int batch_size, int num_inputs, int num_activations) {
+
+        int z = blockIdx.x * blockDim.x + threadIdx.x;
+        int i = blockIdx.x * blockDim.x + threadIdx.y;
+        int j = blockIdx.x * blockDim.x + threadIdx.z;
+
+
         float result = 0.0;
-        if (i < N) {
+        if (i < num_inputs && z < batch_size && j < num_activations) {
             result = wb[j] * silu(x[z][i]) + ws[j] * b_spline(i, cps, knots, bSplineBasis, k);
-            atomicAdd(&y[z][i], result);
+            atomicAdd(&y[z][j], result);
         }
 
     }
 
 
     at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps) {
+        /*
+         * x : [batch_size,num_inputs]
+         * y : [batch_size,num_activations]
+         * wb,ws,cps : [num_activations]
+         * knots : [num_knots]
+         */
 
         TORCH_CHECK(wb.size(0) < MAX_DIM); //TODO: review check
         TORCH_CHECK(knots.size(0) < MAX_DIM);
@@ -104,13 +114,15 @@ namespace cuda_kan {
 
         //TODO: k as argument of CUDA/CPP function
         int k = 3; //degree
+        int batch_size = x.size(0);
         int num_input = x.size(1);
         int num_activations = wb.size(0);
-        int num_threads = 1024; //max number of threads x bloc
+        int dim = MAX_DIM / 3;
+        int num_block = max(batch_size,max(num_input,num_activations));
 
-        dim3 num_blocks(num_input / 1024, num_activations, x.size(0)); // num_input x num_activations x batch_size
+        dim3 threads_block(min(dim,batch_size) + 1,min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
 
-        kan_activation_function<<<num_blocks, num_threads>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, knots_ptr, k,
+        kan_activation_function<<<num_blocks, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, knots_ptr, k,
                                                              num_activations);
 
 
