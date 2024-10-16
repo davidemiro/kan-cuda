@@ -54,7 +54,7 @@ __device__ void bSplineBasis(float*** bSplineBasis, float** x, int batch_size, i
 }
 
 //TODO develop in CUDA
-__global__ void b_spline(float* result, const float* cps, const float* knots, const float*** bSplineBasis, int i, int k){
+__global__ void b_spline(float* result, const float** cps, const float* knots, const float*** bSplineBasis, int i, int k){
     int z = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.x * blockDim.x + threadIdx.y;
     /*
@@ -63,6 +63,6 @@ __global__ void b_spline(float* result, const float* cps, const float* knots, co
      * j : j-th activation function
      * k : degree
      */
-    atomicAdd(&result, cps[i] * bSplineBasis[z][i][j][k]);
+    atomicAdd(&result, cps[j] * bSplineBasis[z][i][j][k]);
 }
 
