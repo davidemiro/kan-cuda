@@ -25,7 +25,7 @@ namespace cpp_kan {
 
     void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *knots,
                                  const float *cps, int k, int N, int i, int j, int z) {
-        y[z][j] = y[z][j] + wb[j] * silu(x[z][i]) + ws[j] * b_spline(x[z][i], N, cps, knots, k);
+        y[z][j] = y[z][j] + wb[i][j] * silu(x[z][i]) + ws[i][j] * b_spline(x[z][i], N, cps, knots, k);
     }
 
     float **tensor_to_float_ptr(at::Tensor x) {
@@ -52,15 +52,20 @@ namespace cpp_kan {
     }
 
 
-    at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps) {
+    at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int degree) {
+        /*
+         * x : [batch_size, input_dim]
+         * y : [batch_size, output_dim]
+         * wb,ws: [input_dim, output_dim]
+         * cps : [input_dim, num_knots]
+         * knots : [num_knots]
+         */
 
         TORCH_CHECK(wb.size(0) < MAX_DIM); //TODO: review check
         TORCH_CHECK(knots.size(0) < MAX_DIM);
         TORCH_CHECK(cps.size(0) < MAX_DIM);
 
         TORCH_CHECK(x.dtype() == at::kFloat);
-        TORCH_CHECK(wb.dtype() == at::kFloat);
-        TORCH_CHECK(ws.dtype() == at::kFloat);
         TORCH_CHECK(wb.dtype() == at::kFloat);
         TORCH_CHECK(ws.dtype() == at::kFloat);
 
@@ -88,16 +93,12 @@ namespace cpp_kan {
         float **y_ptr = tensor_to_float_ptr(y);
 
 
-        //TODO: k deve essere passato come argomento
-        int k = 3;
-
         int num_cps = cps.size(0);
 
         for (int64_t z = 0; z < x.size(0); z++) {
             for (int64_t i = 0; i < x.size(1); i++) {
                 for (int64_t j = 0; j < wb.size(0); j++) {
-                    kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, knots_ptr, cps_ptr, k, num_cps, i, j,
-                                            z);
+                    kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, knots_ptr, cps_ptr, k, num_cps, i, j, z);
                 }
             }
         }

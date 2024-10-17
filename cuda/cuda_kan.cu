@@ -61,19 +61,19 @@ namespace cuda_kan {
 
         float result = 0.0;
         if (i < num_inputs && z < batch_size && j < num_activations) {
-            result = wb[j] * silu(x[z][i]) + ws[j] * b_spline(i, cps, knots, bSplineBasis, k);
+            result = wb[i][j] * silu(x[z][i]) + ws[i][j] * b_spline(i, cps, knots, bSplineBasis, k);
             atomicAdd(&y[z][j], result);
         }
 
     }
 
 
-    at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps) {
+    at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int degree) {
         /*
-         * x : [batch_size,num_inputs]
-         * y : [batch_size,num_activations]
-         * wb,ws: [num_activations]
-         * cps : [num_activations, num_knots]
+         * x : [batch_size, input_dim]
+         * y : [batch_size, output_dim]
+         * wb,ws: [input_dim, output_dim]
+         * cps : [input_dim, num_knots]
          * knots : [num_knots]
          */
 
@@ -113,8 +113,6 @@ namespace cuda_kan {
 
 
 
-        //TODO: k as argument of CUDA/CPP function
-        int k = 3; //degree
         int batch_size = x.size(0);
         int num_input = x.size(1);
         int num_activations = wb.size(0);
@@ -122,7 +120,7 @@ namespace cuda_kan {
         int num_block = max(batch_size,max(num_input,num_activations));
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
 
-        kan_activation_function<<<num_blocks, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, knots_ptr, k,
+        kan_activation_function<<<num_blocks, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, knots_ptr, degree,
                                                              num_activations);
 
 
