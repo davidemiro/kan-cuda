@@ -15,6 +15,7 @@
 #include "spline.cu"
 
 #define MAX_DIM 1024
+#define MAX_THD 1024
 
 
 using namespace std;
@@ -52,7 +53,7 @@ namespace cuda_kan {
         return float_ptr;
     }
 
-    __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, const float *knots, const float ***bSplineBasis, int k, int batch_size, int num_inputs, int num_activations) {
+    __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, const float ****bSplineBasis, int k, int batch_size, int num_inputs, int num_activations) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
         int i = blockIdx.x * blockDim.x + threadIdx.y;
@@ -61,7 +62,7 @@ namespace cuda_kan {
 
         float result = 0.0;
         if (i < num_inputs && z < batch_size && j < num_activations) {
-            result = wb[i][j] * silu(x[z][i]) + ws[i][j] * b_spline(i, cps, knots, bSplineBasis, k);
+            result = wb[i][j] * silu(x[z][i]) + ws[i][j] * cps[j] * b_spline_basis[z][i][j][k]
             atomicAdd(&y[z][j], result);
         }
 
@@ -94,6 +95,10 @@ namespace cuda_kan {
         TORCH_INTERNAL_ASSERT(knots.device().type() == at::DeviceType::CUDA);
         TORCH_INTERNAL_ASSERT(cps.device().type() == at::DeviceType::CUDA);
 
+        int batch_size = x.size(0);
+        int num_input = x.size(1);
+        int num_activations = wb.size(0);
+
 
         at::Tensor x_contig = x.contiguous();
         at::Tensor wb_contig = wb.contiguous();
@@ -101,7 +106,10 @@ namespace cuda_kan {
         at::Tensor cps_contig = cps.contiguous();
         at::Tensor knots_contig = knots.contiguous();
 
-        at::Tensor y = torch::zeros({x.size(0), wb.size(0)}, wb_contig.options());
+
+
+        at::Tensor y = torch::zeros({batch_size, num_activations}, wb_contig.options());
+        at::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_activations,degree}, wb_contig.options());
 
         float **x_ptr = tensor_to_float_ptr(x_contig);
         float **cps_ptr = tensor_to_float_ptr(cps_contig);
@@ -110,17 +118,20 @@ namespace cuda_kan {
         const float *knots_ptr = knots_contig.data_ptr<float>();
 
         float **y_ptr = tensor_to_float_ptr(y);
+        float ****b_spline_basis_ptr = tensor_to_float_ptr(b_spline_basis);
+
+        int num_block = (batch_size / MAX_THD) + 1;
+
+        b_spline_base<<num_block, MAX_THD>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree,knots_ptr);
 
 
-
-        int batch_size = x.size(0);
-        int num_input = x.size(1);
-        int num_activations = wb.size(0);
         int dim = MAX_DIM / 3;
         int num_block = max(batch_size,max(num_input,num_activations));
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
 
-        kan_activation_function<<<num_blocks, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, knots_ptr, degree,
+
+
+        kan_activation_function<<<num_block, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, knots_ptr, degree,
                                                              num_activations);
 
 

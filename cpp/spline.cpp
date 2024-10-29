@@ -9,7 +9,7 @@
 
 using namespace std;
 
-float bSplineBasis(int i, int d, double t, const float* knots) {
+float b_spline_base(int i, int d, double t, const float* knots) {
     if (d == 0) {
         // Base case: piecewise constant function (degree 0)
         if (knots[i] <= t && t < knots[i + 1]) {
@@ -24,12 +24,12 @@ float bSplineBasis(int i, int d, double t, const float* knots) {
 
         // Check the left term (avoid division by zero)
         if (knots[i + d] != knots[i]) {
-            leftTerm = (t - knots[i]) / (knots[i + d] - knots[i]) * bSplineBasis(i, d - 1, t, knots);
+            leftTerm = (t - knots[i]) / (knots[i + d] - knots[i]) * b_spline_base(i, d - 1, t, knots);
         }
 
         // Check the right term (avoid division by zero)
         if (knots[i + d + 1] != knots[i + 1]) {
-            rightTerm = (knots[i + d + 1] - t) / (knots[i + d + 1] - knots[i + 1]) * bSplineBasis(i + 1, d - 1, t, knots);
+            rightTerm = (knots[i + d + 1] - t) / (knots[i + d + 1] - knots[i + 1]) * b_spline_base(i + 1, d - 1, t, knots);
         }
 
         return leftTerm + rightTerm;
