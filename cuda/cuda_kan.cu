@@ -28,32 +28,7 @@ namespace cuda_kan {
 
     }
 
-
-
-    float **tensor_to_float_ptr(at::Tensor x) {
-        // Ensure the tensor is of type float and has 2 dimensions (batch_size, length)
-        TORCH_CHECK(x.scalar_type() == at::kFloat, "Tensor must be of type float");
-        TORCH_CHECK(x.dim() == 2, "Tensor must be 2D");
-
-        // Get dimensions of the tensor
-        int64_t batch_size = x.size(0);
-        int64_t length = x.size(1);
-
-        // Get a pointer to the raw data
-        float *data_ptr = x.data_ptr<float>();
-
-        // Allocate memory for the array of float pointers (for each row)
-        float **float_ptr = new float *[batch_size];
-
-        // Fill the float_ptr array, each element points to a row in the tensor
-        for (int64_t i = 0; i < batch_size; ++i) {
-            float_ptr[i] = data_ptr + i * length;
-        }
-
-        return float_ptr;
-    }
-
-    __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, const float ****bSplineBasis, int k, int batch_size, int num_inputs, int num_activations) {
+    __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, const float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
         int i = blockIdx.x * blockDim.x + threadIdx.y;
@@ -111,29 +86,28 @@ namespace cuda_kan {
         at::Tensor y = torch::zeros({batch_size, num_activations}, wb_contig.options());
         at::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_activations,degree}, wb_contig.options());
 
-        float **x_ptr = tensor_to_float_ptr(x_contig);
+
+        float **x_ptr = x_contig.data_ptr<float**>();
         float **cps_ptr = tensor_to_float_ptr(cps_contig);
         const float *wb_ptr = wb_contig.data_ptr<float>();
         const float *ws_ptr = ws_contig.data_ptr<float>();
         const float *knots_ptr = knots_contig.data_ptr<float>();
 
-        float **y_ptr = tensor_to_float_ptr(y);
-        float ****b_spline_basis_ptr = tensor_to_float_ptr(b_spline_basis);
+        float **y_ptr = y.data_ptr<float**>();
+        float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float****>();
 
         int num_block = (batch_size / MAX_THD) + 1;
+        int num_threads = MAX_THD;
 
-        b_spline_base<<num_block, MAX_THD>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree,knots_ptr);
+        b_spline_base<<num_block, num_threads>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree,knots_ptr);
 
 
         int dim = MAX_DIM / 3;
-        int num_block = max(batch_size,max(num_input,num_activations));
+        num_block = max(batch_size,max(num_input,num_activations));
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
 
 
-
-        kan_activation_function<<<num_block, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, knots_ptr, degree,
-                                                             num_activations);
-
+        kan_activation_function<<<num_block, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations)
 
         return y;
 

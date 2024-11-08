@@ -9,7 +9,7 @@
 
 using namespace std;
 
-__device__ void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_input, int num_activations, int degree,const float* knots) {
+__global__ void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_input, int num_activations, int degree,const float* knots) {
     int z = blockIdx.x * blockDim.x + threadIdx.x;
     int i = blockIdx.x * blockDim.x + threadIdx.y;
     float t;
