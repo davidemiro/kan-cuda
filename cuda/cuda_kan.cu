@@ -25,7 +25,6 @@ namespace cuda_kan {
 
     __device__ float silu(float x) {
         return 1 / (1 + expf(x * -1));
-
     }
 
     __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, const float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations) {
@@ -87,19 +86,19 @@ namespace cuda_kan {
         at::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_activations,degree}, wb_contig.options());
 
 
-        float **x_ptr = x_contig.data_ptr<float**>();
+        float **x_ptr = x_contig.data_ptr<float*>();
         float **cps_ptr = tensor_to_float_ptr(cps_contig);
         const float *wb_ptr = wb_contig.data_ptr<float>();
         const float *ws_ptr = ws_contig.data_ptr<float>();
         const float *knots_ptr = knots_contig.data_ptr<float>();
 
-        float **y_ptr = y.data_ptr<float**>();
-        float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float****>();
+        float **y_ptr = y.data_ptr<float*>();
+        const float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float***>();
 
         int num_block = (batch_size / MAX_THD) + 1;
         int num_threads = MAX_THD;
 
-        b_spline_base<<num_block, num_threads>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree,knots_ptr);
+        //b_spline_base<<num_block, num_threads>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree, knots_ptr);
 
 
         int dim = MAX_DIM / 3;
@@ -107,7 +106,7 @@ namespace cuda_kan {
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
 
 
-        kan_activation_function<<<num_block, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations)
+        kan_activation_function<<<num_block, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations);
 
         return y;
 
