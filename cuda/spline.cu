@@ -53,7 +53,7 @@ __global__ void b_spline_base(float**** b_spline_basis, float** x, int batch_siz
     }
 }
 
-__global__ void b_spline(float* result, const float** cps, const float* knots, const float**** b_spline_basis, int i, int k){
+__global__ void spline(float* result, const float** cps, const float* knots, const float**** b_spline_basis, int i, int k){
     int z = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.x * blockDim.x + threadIdx.y;
     /*

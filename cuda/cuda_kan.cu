@@ -27,7 +27,7 @@ namespace cuda_kan {
         return x / (1 + expf(x * -1));
     }
 
-    __global__ void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations) {
+    __global__ void kan_activation_function(float **x, float **y, const float **wb, const float **ws, const float **cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
         int i = blockIdx.x * blockDim.x + threadIdx.y;
@@ -36,7 +36,7 @@ namespace cuda_kan {
 
         float result = 0.0;
         if (i < num_inputs && z < batch_size && j < num_activations) {
-            //TODO: check cps dimensions
+            //TODO: check cps dimensions and b_spline
             result = wb[i][j] * silu(x[z][i]) + ws[i][j] * cps[i][j] * b_spline_basis[z][i][j][k];
             atomicAdd(&y[z][j], result);
         }
@@ -89,8 +89,8 @@ namespace cuda_kan {
 
         float **x_ptr = x_contig.data_ptr<float*>();
         const float **cps_ptr = cps_contig.data_ptr<float*>();
-        const float *wb_ptr = wb_contig.data_ptr<float>();
-        const float *ws_ptr = ws_contig.data_ptr<float>();
+        const float **wb_ptr = wb_contig.data_ptr<float*>();
+        const float **ws_ptr = ws_contig.data_ptr<float*>();
         const float *knots_ptr = knots_contig.data_ptr<float>();
 
         float **y_ptr = y.data_ptr<float*>();
