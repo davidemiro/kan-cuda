@@ -27,17 +27,17 @@ namespace cuda_kan {
         return x / (1 + expf(x * -1));
     }
 
-    __global__ void kan_activation_function(float **x, float **y, const float **wb, const float **ws, const float **cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations) {
+    __global__ void kan_activation_function(float **x, float **y, const float **wb, const float **ws, const float **cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
         int i = blockIdx.x * blockDim.x + threadIdx.y;
         int j = blockIdx.x * blockDim.x + threadIdx.z;
 
-
         float result = 0.0;
+
         if (i < num_inputs && z < batch_size && j < num_activations) {
-            //TODO: check cps dimensions and b_spline
-            result = wb[i][j] * silu(x[z][i]) + ws[i][j] * cps[i][j] * b_spline_basis[z][i][j][k];
+            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, d, num_knots);
+            result = result + wb[i][j] * silu(x[z][i]) + ws[i][j];
             atomicAdd(&y[z][j], result);
         }
 
@@ -49,8 +49,8 @@ namespace cuda_kan {
          * x : [batch_size, input_dim]
          * y : [batch_size, output_dim]
          * wb,ws: [input_dim, output_dim]
-         * cps : [input_dim, num_knots]
-         * knots : [num_knots]
+         * cps : [output_dim, num_knots]
+         * knots : [input_dim, num_knots]
          */
 
         TORCH_CHECK(wb.size(0) < MAX_DIM); //TODO: review check
@@ -73,6 +73,7 @@ namespace cuda_kan {
         int batch_size = x.size(0);
         int num_input = x.size(1);
         int num_activations = wb.size(0);
+        int num_knots = cps.size(1);
 
 
         at::Tensor x_contig = x.contiguous();
@@ -96,17 +97,14 @@ namespace cuda_kan {
         float **y_ptr = y.data_ptr<float*>();
         float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float***>();
 
-        int num_block = (batch_size / MAX_THD) + 1;
-        int num_threads = MAX_THD;
-
-        b_spline_base<<num_block, num_threads>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree, knots_ptr);
-
-
         int dim = MAX_DIM / 3;
+        int num_block = max(batch_size, num_input);
+        dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
+        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree, knots_ptr);
+
+
         num_block = max(batch_size,max(num_input,num_activations));
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
-
-
         kan_activation_function<<<num_block, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations);
 
         return y;
