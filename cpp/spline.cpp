@@ -9,39 +9,67 @@
 
 using namespace std;
 
-float b_spline_base(int i, int d, double t, const float* knots) {
-    if (d == 0) {
-        // Base case: piecewise constant function (degree 0)
-        if (knots[i] <= t && t < knots[i + 1]) {
-            return 1.0;
-        } else {
-            return 0.0;
-        }
-    } else {
-        // Recursive computation of the B-spline basis function
-        double leftTerm = 0.0;
-        double rightTerm = 0.0;
+void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_input, int num_knots, int degree,const float* knots) {
+    /*
+     * z : z-th batch element
+     * i : i-th element of the input
+     * j : j-th knot
+     * k : degree
+     */
 
-        // Check the left term (avoid division by zero)
-        if (knots[i + d] != knots[i]) {
-            leftTerm = (t - knots[i]) / (knots[i + d] - knots[i]) * b_spline_base(i, d - 1, t, knots);
-        }
 
-        // Check the right term (avoid division by zero)
-        if (knots[i + d + 1] != knots[i + 1]) {
-            rightTerm = (knots[i + d + 1] - t) / (knots[i + d + 1] - knots[i + 1]) * b_spline_base(i + 1, d - 1, t, knots);
-        }
+    float t;
+    double leftTerm = 0.0;
+    double rightTerm = 0.0;
 
-        return leftTerm + rightTerm;
+    for(int z = 0; z < batch_size; z++) {
+        for (int i = 0; i < num_input; i++) {
+            for (int d = 0; d < degree; d++) {
+                for (int j = 0; j < num_knots; j++) {
+
+                    t = x[z][i];
+                    if (d == 0) {
+                        // Base case: piecewise constant function (degree 0)
+                        if (knots[i][j] <= t && t < knots[i][j + 1]) {
+                            b_spline_basis[z][i][j][d] = 1.0;
+                        } else {
+                            b_spline_basis[z][i][j][d] = 0.0;
+                        }
+                    } else {
+
+
+                        // Check the left term (avoid division by zero)
+                        if (knots[i][j + d] != knots[i][j]) {
+                            leftTerm = (t - knots[i][j]) / (knots[i][j + d] - knots[i][j]) *
+                                       b_spline_basis[z][i][j][d - 1];
+                        }
+
+                        // Check the right term (avoid division by zero)
+                        if (knots[i][j + d + 1] != knots[i][j + 1]) {
+                            rightTerm = (knots[i][j + d + 1] - t) / (knots[i][j + d + 1] - knots[i][j + 1]) *
+                                        b_spline_basis[z][i][j + 1][d - 1];
+                        }
+
+                        b_spline_basis[z][i][j][d] = leftTerm + rightTerm;
+                    }
+                }
+            }
+        }
     }
 }
 
-float b_spline(float t, int n, const float* controlPoints, const float* knots, int degree){
+float spline(float* result, const float** cps, const float**** b_spline_basis, int z, int i, int j, int d, int num_knots) {
+    int k = blockIdx.x * blockDim.x + threadIdx.x;
+    /*
+     * z : z-th batch element
+     * i : i-th element of the input
+     * j : j-th activation function
+     * k : k-th knot
+     * d : degree
+     */
     float result = 0.0;
-
-    for (int i = 0; i < n; ++i) {
-        float basisValue = bSplineBasis(i, degree, t, knots);
-        result += controlPoints[i] * basisValue;
+    for(int k = 0; k < num_knots; k++){
+        result += cps[j][k] * b_spline_basis[z][i][k][d];
     }
 
     return result;

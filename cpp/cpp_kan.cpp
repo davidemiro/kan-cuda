@@ -11,6 +11,7 @@
 #include "spline.cpp"
 
 #define MAX_DIM 1024
+#define MAX_THD 1024
 
 
 using namespace std;
@@ -23,32 +24,16 @@ namespace cpp_kan {
     }
 
 
-    void kan_activation_function(float **x, float **y, const float *wb, const float *ws, const float *knots,
-                                 const float *cps, int k, int N, int i, int j, int z) {
-        y[z][j] = y[z][j] + wb[i][j] * silu(x[z][i]) + ws[i][j] * b_spline(x[z][i], N, cps, knots, k);
-    }
+    void kan_activation_function(float **x, float **y, const float **wb, const float **ws, const float **cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
 
-    float **tensor_to_float_ptr(at::Tensor x) {
-        // Ensure the tensor is of type float and has 2 dimensions (batch_size, length)
-        TORCH_CHECK(x.scalar_type() == at::kFloat, "Tensor must be of type float");
-        TORCH_CHECK(x.dim() == 2, "Tensor must be 2D");
-
-        // Get dimensions of the tensor
-        int64_t batch_size = x.size(0);
-        int64_t length = x.size(1);
-
-        // Get a pointer to the raw data
-        float *data_ptr = x.data_ptr<float>();
-
-        // Allocate memory for the array of float pointers (for each row)
-        float **float_ptr = new float *[batch_size];
-
-        // Fill the float_ptr array, each element points to a row in the tensor
-        for (int64_t i = 0; i < batch_size; ++i) {
-            float_ptr[i] = data_ptr + i * length;
+        for(int z = 0; z < batch_size; z++){
+            for(int i = 0; i < num_inputs; i++) {
+                for(int j = 0; j < num_activations; j++){
+                    y[z][j] = y[z][j] + spline(cps, b_spline_basis, z, i, j, d, num_knots) + wb[i][j] * silu(x[z][i]) + ws[i][j];
+                }
+            }
         }
 
-        return float_ptr;
     }
 
 
@@ -58,7 +43,7 @@ namespace cpp_kan {
          * y : [batch_size, output_dim]
          * wb,ws: [input_dim, output_dim]
          * cps : [input_dim, num_knots]
-         * knots : [num_knots]
+         * knots : [input_dim, num_knots]
          */
 
         TORCH_CHECK(wb.size(0) < MAX_DIM); //TODO: review check
@@ -75,6 +60,11 @@ namespace cpp_kan {
         TORCH_INTERNAL_ASSERT(knots.device().type() == at::DeviceType::CPU);
         TORCH_INTERNAL_ASSERT(cps.device().type() == at::DeviceType::CPU);
 
+        int batch_size = x.size(0);
+        int num_input = x.size(1);
+        int num_activations = wb.size(0);
+        int num_knots = cps.size(1);
+
         at::Tensor x_contig = x.contiguous();
         at::Tensor wb_contig = wb.contiguous();
         at::Tensor ws_contig = ws.contiguous();
@@ -83,6 +73,7 @@ namespace cpp_kan {
 
 
         at::Tensor y = torch::zeros({x.size(0), wb.size(0)}, x_contig.options());
+        at::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_activations,degree}, wb_contig.options());
 
         float **x_ptr = tensor_to_float_ptr(x_contig);
         const float *wb_ptr = wb_contig.data_ptr<float>();
@@ -91,20 +82,14 @@ namespace cpp_kan {
         const float *knots_ptr = knots_contig.data_ptr<float>();
 
         float **y_ptr = tensor_to_float_ptr(y);
+        float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float***>();
 
+        b_spline_base(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree, knots_ptr);
 
-        int num_cps = cps.size(0);
-
-        for (int64_t z = 0; z < x.size(0); z++) {
-            for (int64_t i = 0; i < x.size(1); i++) {
-                for (int64_t j = 0; j < wb.size(0); j++) {
-                    kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, knots_ptr, cps_ptr, k, num_cps, i, j, z);
-                }
-            }
-        }
-
+        kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, k, batch_size, num_inputs, num_activations, num_knots);
 
         return y;
+
 
 
     }
