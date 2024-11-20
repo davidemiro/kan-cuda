@@ -24,12 +24,12 @@ namespace cpp_kan {
     }
 
 
-    void kan_activation_function(float **x, float **y, const float **wb, const float **ws, const float **cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
+    void kan_activation_function(float **x, float **y, float **wb, float **ws, float **cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
 
         for(int z = 0; z < batch_size; z++){
             for(int i = 0; i < num_inputs; i++) {
                 for(int j = 0; j < num_activations; j++){
-                    y[z][j] = y[z][j] + spline(cps, b_spline_basis, z, i, j, d, num_knots) + wb[i][j] * silu(x[z][i]) + ws[i][j];
+                    y[z][j] = y[z][j] + spline(cps, b_spline_basis, z, i, j, k, num_knots) + wb[i][j] * silu(x[z][i]) + ws[i][j];
                 }
             }
         }
@@ -75,11 +75,11 @@ namespace cpp_kan {
         at::Tensor y = torch::zeros({x.size(0), wb.size(0)}, x_contig.options());
         at::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_activations,degree}, wb_contig.options());
 
-        float **x_ptr = tensor_to_float_ptr(x_contig);
-        const float *wb_ptr = wb_contig.data_ptr<float>();
-        const float *ws_ptr = ws_contig.data_ptr<float>();
-        const float *cps_ptr = cps_contig.data_ptr<float>();
-        const float *knots_ptr = knots_contig.data_ptr<float>();
+        float **x_ptr = x_contig.data_ptr<float*>();
+        float **cps_ptr = cps_contig.data_ptr<float*>();
+        float **wb_ptr = wb_contig.data_ptr<float*>();
+        float **ws_ptr = ws_contig.data_ptr<float*>();
+        float **knots_ptr = knots_contig.data_ptr<float*>();
 
         float **y_ptr = tensor_to_float_ptr(y);
         float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float***>();

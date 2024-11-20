@@ -92,7 +92,7 @@ namespace cuda_kan {
         float **cps_ptr = cps_contig.data_ptr<float*>();
         float **wb_ptr = wb_contig.data_ptr<float*>();
         float **ws_ptr = ws_contig.data_ptr<float*>();
-        float **knots_ptr = knots_contig.data_ptr<float>();
+        float **knots_ptr = knots_contig.data_ptr<float*>();
 
         float **y_ptr = y.data_ptr<float*>();
         float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float***>();
