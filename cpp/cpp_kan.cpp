@@ -37,7 +37,7 @@ namespace cpp_kan {
     }
 
 
-    at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int degree) {
+    at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int64_t degree) {
         /*
          * x : [batch_size, input_dim]
          * y : [batch_size, output_dim]
@@ -97,7 +97,7 @@ namespace cpp_kan {
     PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {}
 
     TORCH_LIBRARY(cpp_kan, m) {
-        m.def("kan_layer(Tensor x, Tensor wb, Tensor ws, Tensor knots, Tensor cps) -> Tensor");
+        m.def("kan_layer(Tensor x, Tensor wb, Tensor ws, Tensor knots, Tensor cps, int64_t degree) -> Tensor");
     }
 
     TORCH_LIBRARY_IMPL(cpp_kan, CPU, m) {
