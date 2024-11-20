@@ -27,7 +27,7 @@ namespace cuda_kan {
         return x / (1 + expf(x * -1));
     }
 
-    __global__ void kan_activation_function(float **x, float **y, const float **wb, const float **ws, const float **cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
+    __global__ void kan_activation_function(float **x, float **y, float **wb, float **ws, float **cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
         int i = blockIdx.x * blockDim.x + threadIdx.y;
@@ -36,7 +36,7 @@ namespace cuda_kan {
         float result = 0.0;
 
         if (i < num_inputs && z < batch_size && j < num_activations) {
-            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, d, num_knots);
+            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, k, num_knots);
             result = result + wb[i][j] * silu(x[z][i]) + ws[i][j];
             atomicAdd(&y[z][j], result);
         }
@@ -89,10 +89,10 @@ namespace cuda_kan {
 
 
         float **x_ptr = x_contig.data_ptr<float*>();
-        const float **cps_ptr = cps_contig.data_ptr<float*>();
-        const float **wb_ptr = wb_contig.data_ptr<float*>();
-        const float **ws_ptr = ws_contig.data_ptr<float*>();
-        const float *knots_ptr = knots_contig.data_ptr<float>();
+        float **cps_ptr = cps_contig.data_ptr<float*>();
+        float **wb_ptr = wb_contig.data_ptr<float*>();
+        float **ws_ptr = ws_contig.data_ptr<float*>();
+        float **knots_ptr = knots_contig.data_ptr<float>();
 
         float **y_ptr = y.data_ptr<float*>();
         float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float***>();
@@ -104,8 +104,8 @@ namespace cuda_kan {
 
 
         num_block = max(batch_size,max(num_input,num_activations));
-        dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
-        kan_activation_function<<<num_block, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations);
+        dim3 threads_block_(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
+        kan_activation_function<<<num_block, threads_block_>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations);
 
         return y;
 
