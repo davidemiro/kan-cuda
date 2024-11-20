@@ -44,7 +44,7 @@ namespace cuda_kan {
     }
 
 
-    at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int degree) {
+    at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int64_t degree) {
         /*
          * x : [batch_size, input_dim]
          * y : [batch_size, output_dim]
