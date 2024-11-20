@@ -69,7 +69,7 @@ __global__ void spline(float* result, float** cps, float**** b_spline_basis, int
      * d : degree
      */
     if (k < num_knots) {
-        atomicAdd(&result, cps[j][k] * b_spline_basis[z][i][k][d]);
+        atomicAdd(result, cps[j][k] * b_spline_basis[z][i][k][d]);
     }
 }
 
