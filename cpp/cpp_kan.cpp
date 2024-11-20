@@ -86,7 +86,7 @@ namespace cpp_kan {
 
         b_spline_base(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree, knots_ptr);
 
-        kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, k, batch_size, num_input, num_activations, num_knots);
+        kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
 
         return y;
 
