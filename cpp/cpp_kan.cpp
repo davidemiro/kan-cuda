@@ -81,12 +81,12 @@ namespace cpp_kan {
         float **ws_ptr = ws_contig.data_ptr<float*>();
         float **knots_ptr = knots_contig.data_ptr<float*>();
 
-        float **y_ptr = tensor_to_float_ptr(y);
+        float **y_ptr = y.data_ptr<float*>();
         float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float***>();
 
         b_spline_base(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree, knots_ptr);
 
-        kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, k, batch_size, num_inputs, num_activations, num_knots);
+        kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, k, batch_size, num_input, num_activations, num_knots);
 
         return y;
 

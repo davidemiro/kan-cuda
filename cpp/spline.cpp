@@ -58,8 +58,7 @@ void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_
     }
 }
 
-float spline(float** cps, const float**** b_spline_basis, int z, int i, int j, int d, int num_knots) {
-    int k = blockIdx.x * blockDim.x + threadIdx.x;
+float spline(float** cps, float**** b_spline_basis, int z, int i, int j, int d, int num_knots) {
     /*
      * z : z-th batch element
      * i : i-th element of the input
