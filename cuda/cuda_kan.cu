@@ -105,7 +105,7 @@ namespace cuda_kan {
 
         num_block = max(batch_size,max(num_input,num_activations));
         dim3 threads_block_(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
-        kan_activation_function<<<num_block, threads_block_>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations);
+        kan_activation_function<<<num_block, threads_block_>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
 
         return y;
 

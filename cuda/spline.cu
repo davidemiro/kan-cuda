@@ -9,7 +9,7 @@
 
 using namespace std;
 
-__global__ void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_input, int num_knots, int degree,const float** knots) {
+__global__ void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_input, int num_knots, int degree,float** knots) {
     /*
      * z : z-th batch element
      * i : i-th element of the input
@@ -59,7 +59,7 @@ __global__ void b_spline_base(float**** b_spline_basis, float** x, int batch_siz
     }
 }
 
-__global__ void spline(float* result, const float** cps, const float**** b_spline_basis, int z, int i, int j, int d, int num_knots) {
+__global__ void spline(float* result, float** cps, float**** b_spline_basis, int z, int i, int j, int d, int num_knots) {
     int k = blockIdx.x * blockDim.x + threadIdx.x;
     /*
      * z : z-th batch element
