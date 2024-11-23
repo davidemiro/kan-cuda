@@ -116,7 +116,7 @@ namespace cuda_kan {
     PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {}
 
     TORCH_LIBRARY(cuda_kan, m) {
-        m.def("kan_layer(Tensor x, Tensor wb, Tensor ws, Tensor knots, Tensor cps) -> Tensor");
+        m.def("kan_layer(Tensor x, Tensor wb, Tensor ws, Tensor knots, Tensor cps, int64_t degree) -> Tensor");
     }
 
     TORCH_LIBRARY_IMPL(cuda_kan, CUDA, m) {
