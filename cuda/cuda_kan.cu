@@ -36,7 +36,8 @@ namespace cuda_kan {
         float result = 0.0;
 
         if (i < num_inputs && z < batch_size && j < num_activations) {
-            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, k, num_knots);
+            //TODO: add this line
+            //spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, k, num_knots);
             result = result + wb[i][j] * silu(x[z][i]) + ws[i][j];
             atomicAdd(&y[z][j], result);
         }
