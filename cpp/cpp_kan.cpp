@@ -84,6 +84,22 @@ namespace cpp_kan {
         }
     }
 
+    float spline(float** cps, float**** b_spline_basis, int z, int i, int j, int d, int num_knots) {
+        /*
+         * z : z-th batch element
+         * i : i-th element of the input
+         * j : j-th activation function
+         * k : k-th knot
+         * d : degree
+         */
+        float result = 0.0;
+        for(int k = 0; k < num_knots; k++){
+            result += cps[j][k] * b_spline_basis[z][i][k][d];
+        }
+
+        return result;
+    }
+
 
     at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int64_t degree) {
         /*
