@@ -5,7 +5,6 @@
 #include <iostream>
 #include <cmath>
 #include <torch/extension.h>
-#include <ATen/ATen.h>
 
 
 #include "spline.cpp"
@@ -37,7 +36,7 @@ namespace cpp_kan {
     }
 
 
-    at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int64_t degree) {
+    torch::Tensor kan_layer(torch::Tensor x, torch::Tensor wb, torch::Tensor ws, torch::Tensor knots, torch::Tensor cps, int64_t degree) {
         /*
          * x : [batch_size, input_dim]
          * y : [batch_size, output_dim]
@@ -50,30 +49,30 @@ namespace cpp_kan {
         TORCH_CHECK(knots.size(0) < MAX_DIM);
         TORCH_CHECK(cps.size(0) < MAX_DIM);
 
-        TORCH_CHECK(x.dtype() == at::kFloat);
-        TORCH_CHECK(wb.dtype() == at::kFloat);
-        TORCH_CHECK(ws.dtype() == at::kFloat);
+        TORCH_CHECK(x.dtype() == torch::kFloat);
+        TORCH_CHECK(wb.dtype() == torch::kFloat);
+        TORCH_CHECK(ws.dtype() == torch::kFloat);
 
-        TORCH_INTERNAL_ASSERT(x.device().type() == at::DeviceType::CPU);
-        TORCH_INTERNAL_ASSERT(wb.device().type() == at::DeviceType::CPU);
-        TORCH_INTERNAL_ASSERT(ws.device().type() == at::DeviceType::CPU);
-        TORCH_INTERNAL_ASSERT(knots.device().type() == at::DeviceType::CPU);
-        TORCH_INTERNAL_ASSERT(cps.device().type() == at::DeviceType::CPU);
+        TORCH_INTERNAL_ASSERT(x.device().type() == torch::DeviceType::CPU);
+        TORCH_INTERNAL_ASSERT(wb.device().type() == torch::DeviceType::CPU);
+        TORCH_INTERNAL_ASSERT(ws.device().type() == torch::DeviceType::CPU);
+        TORCH_INTERNAL_ASSERT(knots.device().type() == torch::DeviceType::CPU);
+        TORCH_INTERNAL_ASSERT(cps.device().type() == torch::DeviceType::CPU);
 
         int batch_size = x.size(0);
         int num_input = x.size(1);
         int num_activations = wb.size(0);
         int num_knots = cps.size(1);
 
-        at::Tensor x_contig = x.contiguous();
-        at::Tensor wb_contig = wb.contiguous();
-        at::Tensor ws_contig = ws.contiguous();
-        at::Tensor cps_contig = cps.contiguous();
-        at::Tensor knots_contig = knots.contiguous();
+        torch::Tensor x_contig = x.contiguous();
+        torch::Tensor wb_contig = wb.contiguous();
+        torch::Tensor ws_contig = ws.contiguous();
+        torch::Tensor cps_contig = cps.contiguous();
+        torch::Tensor knots_contig = knots.contiguous();
 
 
-        at::Tensor y = torch::zeros({x.size(0), wb.size(0)}, x_contig.options());
-        at::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_activations,degree}, wb_contig.options());
+        torch::Tensor y = torch::zeros({x.size(0), wb.size(0)}, x_contig.options());
+        torch::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_activations,degree}, wb_contig.options());
 
         float **x_ptr = x_contig.data_ptr<float*>();
         float **cps_ptr = cps_contig.data_ptr<float*>();
