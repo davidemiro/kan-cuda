@@ -22,19 +22,6 @@ namespace cpp_kan {
 
     }
 
-
-    void kan_activation_function(float **x, float **y, float **wb, float **ws, float **cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
-
-        for(int z = 0; z < batch_size; z++){
-            for(int i = 0; i < num_inputs; i++) {
-                for(int j = 0; j < num_activations; j++){
-                    y[z][j] = y[z][j] + spline(cps, b_spline_basis, z, i, j, k, num_knots) + wb[i][j] * silu(x[z][i]) + ws[i][j];
-                }
-            }
-        }
-
-    }
-
     void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_input, int num_knots, int degree,float** knots) {
         /*
          * z : z-th batch element
@@ -99,6 +86,21 @@ namespace cpp_kan {
 
         return result;
     }
+
+
+    void kan_activation_function(float **x, float **y, float **wb, float **ws, float **cps, float ****b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
+
+        for(int z = 0; z < batch_size; z++){
+            for(int i = 0; i < num_inputs; i++) {
+                for(int j = 0; j < num_activations; j++){
+                    y[z][j] = y[z][j] + spline(cps, b_spline_basis, z, i, j, k, num_knots) + wb[i][j] * silu(x[z][i]) + ws[i][j];
+                }
+            }
+        }
+
+    }
+
+
 
 
     at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int64_t degree) {
