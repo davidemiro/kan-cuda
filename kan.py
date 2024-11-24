@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-import numpy as np
-import cuda_kan
+#import cuda_kan
 import cpp_kan
 
 
@@ -24,7 +23,8 @@ class KolmogorovArnoldLayer(nn.Module):
     def forward(self, x :torch.Tensor):
         if x.is_cuda:
             print("IS_CUDA")
-            output = cuda_kan.kan_layer(x, self.wb, self.ws, self.knots, self.cps, self.degree)
+            output = None
+            #output = cuda_kan.kan_layer(x, self.wb, self.ws, self.knots, self.cps, self.degree)
         else:
             print("IS_CPP")
             output = cpp_kan.kan_layer(x, self.wb, self.ws, self.knots, self.cps, self.degree)
