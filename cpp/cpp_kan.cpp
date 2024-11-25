@@ -2,9 +2,11 @@
 // Created by davide miro on 14/09/24.
 //
 
-#include <iostream>
-#include <cmath>
 #include <torch/extension.h>
+#include <pybind11/pybind11.h>
+#include <iostream>
+#include <iomanip>
+#include <cmath>
 
 
 #include "spline.cpp"
@@ -74,32 +76,30 @@ namespace cpp_kan {
         torch::Tensor y = torch::zeros({x.size(0), wb.size(0)}, x_contig.options());
         torch::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_activations,degree}, wb_contig.options());
 
-        float **x_ptr = x_contig.data_ptr<float*>();
-        float **cps_ptr = cps_contig.data_ptr<float*>();
-        float **wb_ptr = wb_contig.data_ptr<float*>();
-        float **ws_ptr = ws_contig.data_ptr<float*>();
-        float **knots_ptr = knots_contig.data_ptr<float*>();
 
-        float **y_ptr = y.data_ptr<float*>();
-        float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float***>();
+        float **x_ptr = (float**) x_contig.data_ptr<float>();
+        float **cps_ptr = (float**) cps_contig.data_ptr<float>();
+        float **wb_ptr = (float**) wb_contig.data_ptr<float>();
+        float **ws_ptr = (float**) ws_contig.data_ptr<float>();
+        float **knots_ptr = (float**) knots_contig.data_ptr<float>();
+
+        float **y_ptr = (float**) y.data_ptr<float>();
+        float ****b_spline_basis_ptr = (float****) b_spline_basis.data_ptr<float>();
+
 
         b_spline_base(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree, knots_ptr);
 
         kan_activation_function(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
 
-        return y;
+
+        return x;
 
 
 
     }
 
-    PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {}
-
-    TORCH_LIBRARY(cpp_kan, m) {
-        m.def("kan_layer(Tensor x, Tensor wb, Tensor ws, Tensor knots, Tensor cps, int64_t degree) -> Tensor");
+    PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+        m.def("kan_layer", &kan_layer, "kan_layer");
     }
 
-    TORCH_LIBRARY_IMPL(cpp_kan, CPU, m) {
-        m.impl("kan_layer", &kan_layer);
-    }
 }

@@ -32,9 +32,9 @@ class KolmogorovArnoldLayer(nn.Module):
         return output
 
 
-x = torch.Tensor([1.0, 2.0, 3.0])
+x = torch.Tensor([[1.0, 2.0, 3.0]])
 
-layer = KolmogorovArnoldLayer(3,3,3)
+layer = KolmogorovArnoldLayer(3,3,3, [0,100], 3)
 
 print(layer(x))
 
