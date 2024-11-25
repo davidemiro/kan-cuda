@@ -8,9 +8,8 @@
 #include <cmath>
 #include <torch/extension.h>
 #include <pybind11/pybind11.h>
-#include <ATen/ATen.h>
 #include <algorithm>
-
+#include <iomanip>
 
 #include "spline.cu"
 
@@ -89,14 +88,14 @@ namespace cuda_kan {
         at::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_activations,degree}, wb_contig.options());
 
 
-        float **x_ptr = x_contig.data_ptr<float*>();
-        float **cps_ptr = cps_contig.data_ptr<float*>();
-        float **wb_ptr = wb_contig.data_ptr<float*>();
-        float **ws_ptr = ws_contig.data_ptr<float*>();
-        float **knots_ptr = knots_contig.data_ptr<float*>();
+        float **x_ptr = (float**) x_contig.data_ptr<float>();
+        float **cps_ptr = (float**) cps_contig.data_ptr<float>();
+        float **wb_ptr = (float**) wb_contig.data_ptr<float>();
+        float **ws_ptr = (float**) ws_contig.data_ptr<float>();
+        float **knots_ptr = (float**) knots_contig.data_ptr<float>();
 
-        float **y_ptr = y.data_ptr<float*>();
-        float ****b_spline_basis_ptr = b_spline_basis.data_ptr<float***>();
+        float **y_ptr = (float**) y.data_ptr<float>();
+        float ****b_spline_basis_ptr = (float****) b_spline_basis.data_ptr<float>();
 
         int dim = MAX_DIM / 3;
         int num_block = max(batch_size, num_input);
@@ -113,14 +112,8 @@ namespace cuda_kan {
 
     }
 
-    PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {}
-
-    TORCH_LIBRARY(cuda_kan, m) {
-        m.def("kan_layer(Tensor x, Tensor wb, Tensor ws, Tensor knots, Tensor cps, int64_t degree) -> Tensor");
-    }
-
-    TORCH_LIBRARY_IMPL(cuda_kan, CUDA, m) {
-        m.impl("kan_layer", &kan_layer);
+    PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+        m.def("kan_layer", &kan_layer, "kan_layer");
     }
 
 }
