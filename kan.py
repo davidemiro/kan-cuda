@@ -34,7 +34,7 @@ class KolmogorovArnoldLayer(nn.Module):
 
 x = torch.Tensor([[1.0, 2.0, 3.0]])
 
-layer = KolmogorovArnoldLayer(3,3,3, [0,100], 3)
+layer = KolmogorovArnoldLayer(3,5,7, [0,100], 2)
 
 print(layer(x))
 

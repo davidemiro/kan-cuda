@@ -9,7 +9,7 @@
 
 using namespace std;
 
-void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_input, int num_knots, int degree,float** knots) {
+void b_spline_base(torch::Tensor b_spline_basis, torch::Tensor x, int batch_size, int num_input, int num_knots, int degree,torch::Tensor knots) {
     /*
      * z : z-th batch element
      * i : i-th element of the input
@@ -26,31 +26,28 @@ void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_
         for (int i = 0; i < num_input; i++) {
             for (int d = 0; d < degree; d++) {
                 for (int j = 0; j < num_knots; j++) {
-
-                    t = x[z][i];
+                    t = x.index({z,i}).item<float>();
                     if (d == 0) {
                         // Base case: piecewise constant function (degree 0)
-                        if (knots[i][j] <= t && t < knots[i][j + 1]) {
-                            b_spline_basis[z][i][j][d] = 1.0;
+                        if (knots.index({i,j}).item<float>() <= t && t < knots.index({i,j + 1}).item<float>()) {
+                            b_spline_basis.index_put_({z,i,j,d}, 1.0);
                         } else {
-                            b_spline_basis[z][i][j][d] = 0.0;
+                            b_spline_basis.index_put_({z,i,j,d}, 0.0);
                         }
                     } else {
 
-
                         // Check the left term (avoid division by zero)
-                        if (knots[i][j + d] != knots[i][j]) {
-                            leftTerm = (t - knots[i][j]) / (knots[i][j + d] - knots[i][j]) *
-                                       b_spline_basis[z][i][j][d - 1];
+                        if (knots.index({i,j + d}).item<float>() != knots.index({i,j}).item<float>()) {
+                            leftTerm = (t - knots.index({i,j}).item<float>()) / (knots.index({i,j + d}).item<float>() - knots.index({i,j}).item<float>() * b_spline_basis.index({z,i,j,d - 1}).item<float>());
                         }
 
                         // Check the right term (avoid division by zero)
-                        if (knots[i][j + d + 1] != knots[i][j + 1]) {
-                            rightTerm = (knots[i][j + d + 1] - t) / (knots[i][j + d + 1] - knots[i][j + 1]) *
-                                        b_spline_basis[z][i][j + 1][d - 1];
+                        //TODO: fix the error j + d  + 1 > num_knots
+                        if (knots.index({i,j + d + 1}).item<float>() != knots.index({i,j + 1}).item<float>()) {
+                            rightTerm = (knots.index({i,j + d + 1}).item<float>() - t) / (knots.index({i,j + d + 1}).item<float>() - knots.index({i,j + 1}).item<float>()) * b_spline_basis.index({z,i,j + 1,d - 1}).item<float>();
                         }
 
-                        b_spline_basis[z][i][j][d] = leftTerm + rightTerm;
+                        b_spline_basis.index_put_({z,i,j,d}, leftTerm + rightTerm);
                     }
                 }
             }
@@ -58,7 +55,7 @@ void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_
     }
 }
 
-float spline(float** cps, float**** b_spline_basis, int z, int i, int j, int d, int num_knots) {
+float spline(torch::Tensor cps, torch::Tensor b_spline_basis, int z, int i, int j, int d, int num_knots) {
     /*
      * z : z-th batch element
      * i : i-th element of the input
@@ -68,7 +65,8 @@ float spline(float** cps, float**** b_spline_basis, int z, int i, int j, int d, 
      */
     float result = 0.0;
     for(int k = 0; k < num_knots; k++){
-        result += cps[j][k] * b_spline_basis[z][i][k][d];
+        //TODO: check d degree dimension
+        result += cps.index({j,k}).item<float>() * b_spline_basis.index({z,i,k,d - 1}).item<float>();
     }
 
     return result;
