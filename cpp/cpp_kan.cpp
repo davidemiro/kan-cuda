@@ -33,8 +33,7 @@ namespace cpp_kan {
         for(int z = 0; z < batch_size; z++){
             for(int i = 0; i < num_inputs; i++) {
                 for(int j = 0; j < num_activations; j++){
-                    cout << z << " " << i << " " << j << endl;
-                    y.index_put_({z,j}, y.index({z,j}).item<float>() + spline(cps, b_spline_basis, z, i, j, k, num_knots) * wb.index({i,j}).item<float>() + silu(x.index({z,i}).item<float>()) * ws.index({i,j}).item<float>());
+                    y.index_put_({z,j}, y.index({z,j}).item<float>() + spline(cps, b_spline_basis, z, i, j, k, num_knots) * ws.index({i,j}).item<float>() + silu(x.index({z,i}).item<float>()) * wb.index({i,j}).item<float>());
                 }
             }
         }
@@ -47,7 +46,7 @@ namespace cpp_kan {
          * x : [batch_size, input_dim]
          * y : [batch_size, output_dim]
          * wb,ws: [input_dim, output_dim]
-         * cps : [input_dim, num_knots]
+         * cps : [output_dim, num_knots]
          * knots : [input_dim, num_knots]
          */
 
@@ -70,10 +69,8 @@ namespace cpp_kan {
         int num_activations = wb.size(1);
         int num_knots = cps.size(1);
 
-        cout << batch_size <<" "<< num_input <<" " << num_activations <<" " << num_knots << " "<< degree << endl;
 
-
-        torch::Tensor y = torch::zeros({x.size(0), wb.size(0)}, x.options());
+        torch::Tensor y = torch::zeros({x.size(0), wb.size(1)}, x.options());
         torch::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_knots,degree}, wb.options());
 
         b_spline_base(b_spline_basis, x, batch_size, num_input, num_activations, degree, knots);

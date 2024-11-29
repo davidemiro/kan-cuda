@@ -15,7 +15,7 @@ class KolmogorovArnoldLayer(nn.Module):
 
         # Create random knot vector and control points
         self.knots = torch.linspace(range_knots[0], range_knots[1], num_knots).expand(input_dim,num_knots)
-        self.cps = torch.nn.Parameter(torch.ones(input_dim, num_knots))
+        self.cps = torch.nn.Parameter(torch.ones(output_dim, num_knots))
 
         self.wb = torch.nn.Parameter(torch.rand(input_dim, output_dim))
         self.ws = torch.nn.Parameter(torch.rand(input_dim, output_dim))

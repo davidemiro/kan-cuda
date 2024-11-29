@@ -37,8 +37,9 @@ namespace cuda_kan {
         if (i < num_inputs && z < batch_size && j < num_activations) {
             //TODO: add this line
             //spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, k, num_knots);
-            result = result + wb[i][j] * silu(x[z][i]) + ws[i][j];
-            atomicAdd(&y[z][j], result);
+            result = result * ws.index({i,j}).item<float>() + silu(x.index({z,i}).item<float>()) * wb.index({i,j}).item<float>();
+            //TODO: make this operation atomic
+            y.index_put_({z,j}, result + y.index({z,j}).item<float>());
         }
 
     }
@@ -57,55 +58,33 @@ namespace cuda_kan {
         TORCH_CHECK(knots.size(0) < MAX_DIM);
         TORCH_CHECK(cps.size(0) < MAX_DIM);
 
+        TORCH_CHECK(x.dtype() == torch::kFloat);
+        TORCH_CHECK(wb.dtype() == torch::kFloat);
+        TORCH_CHECK(ws.dtype() == torch::kFloat);
 
-        TORCH_CHECK(x.dtype() == at::kFloat);
-        TORCH_CHECK(wb.dtype() == at::kFloat);
-        TORCH_CHECK(ws.dtype() == at::kFloat);
-        TORCH_CHECK(wb.dtype() == at::kFloat);
-        TORCH_CHECK(ws.dtype() == at::kFloat);
-
-        TORCH_INTERNAL_ASSERT(x.device().type() == at::DeviceType::CUDA);
-        TORCH_INTERNAL_ASSERT(wb.device().type() == at::DeviceType::CUDA);
-        TORCH_INTERNAL_ASSERT(ws.device().type() == at::DeviceType::CUDA);
-        TORCH_INTERNAL_ASSERT(knots.device().type() == at::DeviceType::CUDA);
-        TORCH_INTERNAL_ASSERT(cps.device().type() == at::DeviceType::CUDA);
+        TORCH_INTERNAL_ASSERT(x.device().type() == torch::DeviceType::CPU);
+        TORCH_INTERNAL_ASSERT(wb.device().type() == torch::DeviceType::CPU);
+        TORCH_INTERNAL_ASSERT(ws.device().type() == torch::DeviceType::CPU);
+        TORCH_INTERNAL_ASSERT(knots.device().type() == torch::DeviceType::CPU);
+        TORCH_INTERNAL_ASSERT(cps.device().type() == torch::DeviceType::CPU);
 
         int batch_size = x.size(0);
         int num_input = x.size(1);
-        int num_activations = wb.size(0);
+        int num_activations = wb.size(1);
         int num_knots = cps.size(1);
 
-
-        at::Tensor x_contig = x.contiguous();
-        at::Tensor wb_contig = wb.contiguous();
-        at::Tensor ws_contig = ws.contiguous();
-        at::Tensor cps_contig = cps.contiguous();
-        at::Tensor knots_contig = knots.contiguous();
-
-
-
-        at::Tensor y = torch::zeros({batch_size, num_activations}, wb_contig.options());
-        at::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_activations,degree}, wb_contig.options());
-
-
-        float **x_ptr = (float**) x_contig.data_ptr<float>();
-        float **cps_ptr = (float**) cps_contig.data_ptr<float>();
-        float **wb_ptr = (float**) wb_contig.data_ptr<float>();
-        float **ws_ptr = (float**) ws_contig.data_ptr<float>();
-        float **knots_ptr = (float**) knots_contig.data_ptr<float>();
-
-        float **y_ptr = (float**) y.data_ptr<float>();
-        float ****b_spline_basis_ptr = (float****) b_spline_basis.data_ptr<float>();
+        torch::Tensor y = torch::zeros({x.size(0), wb.size(1)}, x.options());
+        torch::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_knots,degree}, wb.options());
 
         int dim = MAX_DIM / 3;
         int num_block = max(batch_size, num_input);
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
-        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree, knots_ptr);
+        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x, batch_size, num_input, num_activations, degree, knots);
 
 
         num_block = max(batch_size,max(num_input,num_activations));
         dim3 threads_block_(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
-        kan_activation_function<<<num_block, threads_block_>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
+        kan_activation_function<<<num_block, threads_block_>>>(x, y, wb, ws, cps, b_spline_basis, degree, batch_size, num_input, num_activations, num_knots);
 
         return y;
 
