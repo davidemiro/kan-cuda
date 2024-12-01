@@ -8,7 +8,7 @@
 
 using namespace std;
 
-__global__ void b_spline_base(float**** b_spline_basis, float** x, int batch_size, int num_input, int num_knots, int degree,float** knots) {
+__global__ void b_spline_base(torch::Tensor b_spline_basis, torch::Tensor x, int batch_size, int num_input, int num_knots, int degree,torch::Tensor knots) {
     /*
      * z : z-th batch element
      * i : i-th element of the input
