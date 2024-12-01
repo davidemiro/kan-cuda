@@ -39,7 +39,7 @@ layer = KolmogorovArnoldLayer(3,5,7, [0,100], 2).to("cuda")
 print("9")
 y = layer(x)
 print("10")
-print(y)
+print(y.to("cuda"))
 
 
 
