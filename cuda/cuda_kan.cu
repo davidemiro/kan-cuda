@@ -26,7 +26,7 @@ namespace cuda_kan {
         return x / (1 + expf(x * -1));
     }
 
-    __global__ void kan_activation_function(torch::Tensor x, torch::Tensor y, torch::Tensor wb, torch::Tensor ws, torch::Tensor cps, torch::Tensor **b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
+    __global__ void kan_activation_function(torch::Tensor x, torch::Tensor y, torch::Tensor wb, torch::Tensor ws, torch::Tensor cps, torch::Tensor b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
         int i = blockIdx.x * blockDim.x + threadIdx.y;
