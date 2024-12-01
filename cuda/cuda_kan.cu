@@ -62,11 +62,11 @@ namespace cuda_kan {
         TORCH_CHECK(wb.dtype() == torch::kFloat);
         TORCH_CHECK(ws.dtype() == torch::kFloat);
 
-        TORCH_INTERNAL_ASSERT(x.device().type() == torch::DeviceType::CPU);
-        TORCH_INTERNAL_ASSERT(wb.device().type() == torch::DeviceType::CPU);
-        TORCH_INTERNAL_ASSERT(ws.device().type() == torch::DeviceType::CPU);
-        TORCH_INTERNAL_ASSERT(knots.device().type() == torch::DeviceType::CPU);
-        TORCH_INTERNAL_ASSERT(cps.device().type() == torch::DeviceType::CPU);
+        TORCH_INTERNAL_ASSERT(x.device().type() == torch::DeviceType::CUDA);
+        TORCH_INTERNAL_ASSERT(wb.device().type() == torch::DeviceType::CUDA);
+        TORCH_INTERNAL_ASSERT(ws.device().type() == torch::DeviceType::CUDA);
+        TORCH_INTERNAL_ASSERT(knots.device().type() == torch::DeviceType::CUDA);
+        TORCH_INTERNAL_ASSERT(cps.device().type() == torch::DeviceType::CUDA);
 
         int batch_size = x.size(0);
         int num_input = x.size(1);
@@ -79,7 +79,7 @@ namespace cuda_kan {
         int dim = MAX_DIM / 3;
         int num_block = max(batch_size, num_input);
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
-        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x, batch_size, num_input, num_activations, degree, knots);
+        b_spline_base<<<num_block, threads_block>>>(b_spline_basis, x, batch_size, num_input, num_activations, degree, knots);
 
 
         num_block = max(batch_size,max(num_input,num_activations));
