@@ -148,6 +148,7 @@ namespace cuda_kan {
         cout << 7 << endl;
         kan_activation_function<<<num_block, threads_block_>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots, num_dims, dims, ids);
         cout << 8 << endl;
+        cudaDeviceSynchronize();
 
         return y;
 
