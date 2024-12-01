@@ -136,7 +136,7 @@ namespace cuda_kan {
         int num_block = max(batch_size, num_input);
         cout << 4 << endl;
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
-        //b_spline_base<<<num_block, threads_block>>>(b_spline_basis, x, batch_size, num_input, num_activations, degree, knots);
+        b_spline_base<<<num_block, threads_block>>>(b_spline_basis, x, batch_size, num_input, num_activations, degree, knots, num_dims, dims, ids);
         cout << 5 << endl;
 
 
