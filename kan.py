@@ -36,7 +36,10 @@ x = torch.Tensor([[1.0, 2.0, 3.0]]).to("cuda")
 
 layer = KolmogorovArnoldLayer(3,5,7, [0,100], 2).to("cuda")
 
-print(layer(x))
+print("9")
+y = layer(x)
+print("10")
+print(y)
 
 
 
