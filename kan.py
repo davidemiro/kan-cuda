@@ -32,7 +32,7 @@ class KolmogorovArnoldLayer(nn.Module):
         return output
 
 
-x = torch.Tensor([[1.0, 2.0, 3.0]])
+x = torch.Tensor([[1.0, 2.0, 3.0]]).to("cuda")
 
 layer = KolmogorovArnoldLayer(3,5,7, [0,100], 2)
 
