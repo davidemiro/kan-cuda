@@ -83,6 +83,7 @@ namespace cuda_kan {
          * cps : [output_dim, num_knots]
          * knots : [input_dim, num_knots]
          */
+        cout << 0 << endl;
 
         TORCH_CHECK(wb.size(0) < MAX_DIM); //TODO: review check
         TORCH_CHECK(knots.size(0) < MAX_DIM);
@@ -114,7 +115,7 @@ namespace cuda_kan {
         torch::Tensor y = torch::zeros({x.size(0), wb.size(1)}, x.options()).contiguous();
         torch::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_knots,degree}, wb.options()).contiguous();
 
-
+        cout << 1 << endl;
         float *x_ptr = x_contig.data_ptr<float>();
         float *cps_ptr = cps_contig.data_ptr<float>();
         float *wb_ptr = wb_contig.data_ptr<float>();
@@ -125,22 +126,28 @@ namespace cuda_kan {
 
         size_t* dims;
         cudaMalloc(&dims, num_dims * sizeof(size_t));
+        cout << 2 << endl;
 
         size_t* ids;
         cudaMalloc(&dims, num_dims * sizeof(size_t));
+        cout << 3 << endl;
 
         int dim = MAX_DIM / 3;
         int num_block = max(batch_size, num_input);
+        cout << 4 << endl;
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
         //b_spline_base<<<num_block, threads_block>>>(b_spline_basis, x, batch_size, num_input, num_activations, degree, knots);
-
+        cout << 5 << endl;
 
 
 
 
         num_block = max(batch_size,max(num_input,num_activations));
+        cout << 6 << endl;
         dim3 threads_block_(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
+        cout << 7 << endl;
         kan_activation_function<<<num_block, threads_block_>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots, num_dims, dims, ids);
+        cout << 8 << endl;
 
         return y;
 
