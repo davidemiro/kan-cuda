@@ -14,11 +14,11 @@ class KolmogorovArnoldLayer(nn.Module):
         self.num_knots = num_knots
 
         # Create random knot vector and control points
-        self.knots = torch.linspace(range_knots[0], range_knots[1], num_knots).expand(input_dim,num_knots)
-        self.cps = torch.nn.Parameter(torch.ones(output_dim, num_knots))
+        self.knots = torch.linspace(range_knots[0], range_knots[1], num_knots).expand(input_dim,num_knots).to("cuda")
+        self.cps = torch.nn.Parameter(torch.ones(output_dim, num_knots)).to("cuda")
 
-        self.wb = torch.nn.Parameter(torch.rand(input_dim, output_dim))
-        self.ws = torch.nn.Parameter(torch.rand(input_dim, output_dim))
+        self.wb = torch.nn.Parameter(torch.rand(input_dim, output_dim)).to("cuda")
+        self.ws = torch.nn.Parameter(torch.rand(input_dim, output_dim)).to("cuda")
 
     def forward(self, x :torch.Tensor):
         if x.is_cuda:
