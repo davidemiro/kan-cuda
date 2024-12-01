@@ -29,7 +29,7 @@ namespace cuda_kan {
     __device__ size_t compute_offset(size_t* dims, size_t* ids, int num_dims){
         size_t offset = 0;
         size_t multiplier = 1;
-        for(size_t i = num_dims - 1; i >= 0; i++){
+        for(int i = num_dims - 1; i >= 0; i--){
             offset += ids[i]*multiplier;
             multiplier *=dims[i];
         }
