@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <iomanip>
 
-//#include "spline.cu"
+#include "spline.cu"
 
 #define MAX_DIM 1024
 #define MAX_THD 1024
