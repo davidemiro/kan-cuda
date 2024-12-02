@@ -61,8 +61,8 @@ __global__ void b_spline_base(torch::Tensor b_spline_basis, torch::Tensor x, int
         for (int j = 0; j < num_knots; j++) {
             ids[2] = j;
 
-            idx = compute_offset(dims, ids, num_dims);
-            t = x[compute_offset(num_input,z,i)]
+            idx = compute_offset_base(dims, ids, num_dims);
+            t = x[compute_offset(num_input,z,i)];
             if (d == 0) {
                 // Base case: piecewise constant function (degree 0)
                 if (knots[compute_offset(num_knots,i,j)]<= t && t < knots[compute_offset(num_knots,i,j + 1)]) {
@@ -91,7 +91,7 @@ __global__ void b_spline_base(torch::Tensor b_spline_basis, torch::Tensor x, int
                     ids[3] = d;
                 }
 
-                idx = compute_offset(dims, ids, num_dims);
+                idx = compute_offset_base(dims, ids, num_dims);
                 b_spline_basis[idx] = leftTerm + rightTerm;
             }
         }
