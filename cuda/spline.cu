@@ -25,11 +25,11 @@ __device__ size_t compute_offset_base(int z, int i, int j, int d,
     int stride_batch_size = stride_num_input * num_input;
 
 
-    return (z * stride_batch_size) + (i * stride_num_input) + (k * stride_num_knots) + d;
+    return (z * stride_batch_size) + (i * stride_num_input) + (j * stride_num_knots) + d;
 
 }
 
-__global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, int num_input,int num_output, int num_knots, int degree,float* knots) {
+__global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, int num_input, int num_knots, int degree, float* knots) {
     /*
      * z : z-th batch element
      * i : i-th element of the input

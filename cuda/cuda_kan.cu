@@ -42,7 +42,7 @@ namespace cuda_kan {
         float result = 0.0;
 
         if (i < num_input && z < batch_size && j < num_activations) {
-            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j,x DIMS);
+            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j,x, DIMS);
             cudaDeviceSynchronize();
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);
@@ -104,7 +104,7 @@ namespace cuda_kan {
         int num_block = max(batch_size, num_input);
         cout << 4 << endl;
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
-        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, nums_knots, degree, knots_ptr);
+        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_knots, degree, knots_ptr);
         cout << 5 << endl;
 
 
