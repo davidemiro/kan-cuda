@@ -15,6 +15,7 @@
 
 #define MAX_DIM 1024
 #define MAX_THD 1024
+#define DIMS batch_size, num_input, num_knots, degree
 
 
 using namespace std;
@@ -27,7 +28,7 @@ namespace cuda_kan {
     }
 
 
-    __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
+    __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
         int i = blockIdx.x * blockDim.x + threadIdx.y;
@@ -41,7 +42,7 @@ namespace cuda_kan {
         float result = 0.0;
 
         if (i < num_inputs && z < batch_size && j < num_activations) {
-            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, k, num_knots);
+            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, DIMS);
             cudaDeviceSynchronize();
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);
@@ -103,7 +104,7 @@ namespace cuda_kan {
         int num_block = max(batch_size, num_input);
         cout << 4 << endl;
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
-        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree, knots_ptr);
+        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, nums_knots, degree, knots_ptr);
         cout << 5 << endl;
 
 
