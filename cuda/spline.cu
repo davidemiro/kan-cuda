@@ -66,14 +66,14 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
 
                 // Check the left term (avoid division by zero)
                 if (knots[compute_offset(num_knots, i, j + d)] != knots[compute_offset(num_knots, i, j)]) {
-                    idx_ = compute_offset(z, i, j, d - 1, DIMS);
+                    idx_ = compute_offset_base(z, i, j, d - 1, DIMS);
                     leftTerm = (t - knots[compute_offset(num_knots,i,j)]) / (knots[compute_offset(num_knots, i, j + d)] - knots[compute_offset(num_knots, i, j)] * b_spline_basis[idx_]);
                 }
 
                 // Check the right term (avoid division by zero)
                 //TODO: fix the error j + d  + 1 > num_knots
                 if (knots[compute_offset(num_knots, i, j + d + 1)] != knots[compute_offset(num_knots, i, j + 1)]) {
-                    idx_ = compute_offset(z, i, j + 1, d - 1, DIMS);
+                    idx_ = compute_offset_base(z, i, j + 1, d - 1, DIMS);
                     rightTerm = (knots[compute_offset(num_knots, i, j + d + 1)] - t) / (knots[compute_offset(num_knots, i, j + d + 1)] - knots[compute_offset(num_knots, i, j + 1)]) * b_spline_basis[idx_];
                 }
                 b_spline_basis[idx] = leftTerm + rightTerm;
@@ -92,7 +92,7 @@ __global__ void spline(float* result, float* cps, float* b_spline_basis, int z, 
      * d : degree
      */
 
-    size_t idx = compute_offset_base(z, i, j, k, degree - 1, DIMS);
+    size_t idx = compute_offset_base(z, i, j, degree - 1, DIMS);
     float mul = 0.0;
     if (k < num_knots) {
 

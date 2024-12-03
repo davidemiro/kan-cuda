@@ -42,7 +42,7 @@ namespace cuda_kan {
         float result = 0.0;
 
         if (i < num_input && z < batch_size && j < num_activations) {
-            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j,x, DIMS);
+            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, DIMS);
             cudaDeviceSynchronize();
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);
