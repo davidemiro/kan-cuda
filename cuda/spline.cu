@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include <torch/extension.h>
+#define DIMS batch_size, num_input, num_output, num_knots, degree
 
 using namespace std;
 
@@ -16,19 +17,20 @@ __device__ size_t compute_offset(int dim, int i, int j){
 
 
 //compute offset b_spline_basis
-__device__ size_t compute_offset_base(size_t* dims, size_t* ids, int num_dims){
-    size_t offset = 0;
-    size_t multiplier = 1;
-    for(int i = num_dims - 1; i >= 0; i--){
-        offset += ids[i]*multiplier;
-        multiplier *=dims[i];
-    }
+__device__ size_t compute_offset_base(int z, int i, int j, int k, int d,
+                                      int batch_size, int num_input, int num_output, int num_knots, int degree){
 
-    return offset;
+    int stride_num_knots = stride_d * d;
+    int stride_num_output = stride_num_k * num_knots;
+    int stride_num_input = stride_num_output * num_output;
+    int stride_batch_size = stride_num_input * num_input;
+
+
+    return (z * stride_batch_size) + (i * stride_num_input) + (j * stride_num_output) + (k * stride_num_knots) + d;
 
 }
 
-__global__ void b_spline_base(torch::Tensor b_spline_basis, torch::Tensor x, int batch_size, int num_input, int num_knots, int degree,torch::Tensor knots, int num_dims, size_t* dims, size_t* ids) {
+__global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, int num_input, int num_knots, int degree,float* knots) {
     /*
      * z : z-th batch element
      * i : i-th element of the input
@@ -42,26 +44,17 @@ __global__ void b_spline_base(torch::Tensor b_spline_basis, torch::Tensor x, int
     float leftTerm = 0.0;
     float rightTerm = 0.0;
     size_t idx = 0;
+    size_t idx_ = 0;
 
     if(z >= batch_size || i >= num_input){
         return;
     }
 
     //[batch_size, num_input, num_activations, num_knots, degree]
-    dims[0] = batch_size;
-    dims[1] = num_input;
-    dims[2] = num_knots;
-    dims[3] = degree;
-
-    ids[0] = z;
-    ids[1] = i;
-
     for(int d = 0; d < degree; d++) {
-        ids[3] = d;
         for (int j = 0; j < num_knots; j++) {
-            ids[2] = j;
 
-            idx = compute_offset_base(dims, ids, num_dims);
+            idx = compute_offset_base(z, i, j, k, d, DIMS);
             t = x[compute_offset(num_input,z,i)];
             if (d == 0) {
                 // Base case: piecewise constant function (degree 0)
@@ -74,31 +67,23 @@ __global__ void b_spline_base(torch::Tensor b_spline_basis, torch::Tensor x, int
 
                 // Check the left term (avoid division by zero)
                 if (knots[compute_offset(num_knots,i,j + d)] != knots[compute_offset(num_knots,i,j)]) {
-                    ids[3] = d - 1;
-                    idx = compute_offset(dims, ids, num_dims);
-                    leftTerm = (t - knots[compute_offset(num_knots,i,j)]) / (knots[compute_offset(num_knots,i,j + d)] - knots.index[compute_offset(num_knots,i,j)] * b_spline_basis[idx]);
-                    ids[3] = d;
+                    idx_ = compute_offset(z,i,j,k, d - 1, DIMS);
+                    leftTerm = (t - knots[compute_offset(num_knots,i,j)]) / (knots[compute_offset(num_knots,i,j + d)] - knots.index[compute_offset(num_knots,i,j)] * b_spline_basis[idx_]);
                 }
 
                 // Check the right term (avoid division by zero)
                 //TODO: fix the error j + d  + 1 > num_knots
                 if (knots[compute_offset(num_knots,i,j + d + 1)] != knots[compute_offset(num_knots,i,j + 1)]) {
-                    ids[2] = j + 1;
-                    ids[3] = d - 1;
-                    idx = compute_offset(dims, ids, num_dims);
-                    rightTerm = (knots[compute_offset(num_knots,i,j + d + 1)] - t) / (knots[compute_offset(num_knots,i,j + d + 1)] - knots[compute_offset(num_knots,i,j + 1)]) * b_spline_basis[idx];
-                    ids[2] = j;
-                    ids[3] = d;
+                    idx_ = compute_offset(z,i,j + 1,k, d - 1, DIMS);
+                    rightTerm = (knots[compute_offset(num_knots,i,j + d + 1)] - t) / (knots[compute_offset(num_knots,i,j + d + 1)] - knots[compute_offset(num_knots,i,j + 1)]) * b_spline_basis[idx_];
                 }
-
-                idx = compute_offset_base(dims, ids, num_dims);
                 b_spline_basis[idx] = leftTerm + rightTerm;
             }
         }
     }
 }
 
-__global__ void spline(float* result, torch::Tensor cps, torch::Tensor b_spline_basis, int z, int i, int j, int d, int num_knots, int num_dims, size_t* dims, size_t* ids) {
+__global__ void spline(float* result, float* cps, float* b_spline_basis, int z, int i, int j, int d, int num_knots, int num_dims, size_t* dims, size_t* ids) {
     int k = blockIdx.x * blockDim.x + threadIdx.x;
     /*
      * z : z-th batch element
@@ -107,9 +92,13 @@ __global__ void spline(float* result, torch::Tensor cps, torch::Tensor b_spline_
      * k : k-th knot
      * d : degree
      */
+
+    size_t idx = compute_offset_base(z, i, j, k, d - 1, DIMS);
+    float mul = 0.0;
     if (k < num_knots) {
-        //TODO: make this operation atomic
-        *result += cps.index({j,k}).item<float>() * b_spline_basis.index({z,i,k,d - 1}).item<float>();
+
+        mul = cps[compute_offset(num_knots, i, k)] * b_spline_basis[idx];
+        atomicAdd(result, mul);
     }
 }
 

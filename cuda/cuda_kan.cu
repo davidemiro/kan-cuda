@@ -26,41 +26,17 @@ namespace cuda_kan {
         return x / (1 + expf(x * -1));
     }
 
-    __device__ size_t compute_offset(size_t* dims, size_t* ids, int num_dims){
-        size_t offset = 0;
-        size_t multiplier = 1;
-        for(int i = num_dims - 1; i >= 0; i--){
-            offset += ids[i]*multiplier;
-            multiplier *=dims[i];
-        }
 
-        return offset;
-
-    }
-
-    __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots, int num_dims, size_t* dims, size_t* ids) {
+    __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int k, int batch_size, int num_inputs, int num_activations, int num_knots) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
         int i = blockIdx.x * blockDim.x + threadIdx.y;
         int j = blockIdx.x * blockDim.x + threadIdx.z;
 
 
-
-        dims[0] = batch_size;
-        dims[1] = num_inputs;
-        ids[0] = z;
-        ids[1] = i;
-        size_t x_idx = compute_offset(dims, ids, 2);
-
-        dims[1] = num_activations;
-        ids[1] = j;
-        size_t y_idx = compute_offset(dims, ids, 2);
-
-        dims[0] = num_inputs;
-        ids[0] = i;
-        size_t w_idx = compute_offset(dims, ids, 2);
-
-
+        size_t x_idx = compute_offset(num_inputs, z, i)
+        size_t y_idx = compute_offset(num_activations,z,j);
+        size_t w_idx = compute_offset(num_inputs, i, j);
 
         float result = 0.0;
 
@@ -68,8 +44,7 @@ namespace cuda_kan {
             //TODO: add this line
             //spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, k, num_knots);
             result = result * ws[w_idx]+ silu(x[x_idx]) * wb[w_idx];
-            //TODO: make this operation atomic
-            y[y_idx] = y[y_idx] + result;
+            atomicAdd(&y[y_idx], result);
         }
 
     }
