@@ -39,11 +39,10 @@ namespace cuda_kan {
         size_t y_idx = compute_offset(num_activations,z,j);
         size_t w_idx = compute_offset(num_input, i, j);
 
-        float result = 0.0;
+        float result = 1.0;
 
         if (i < num_input && z < batch_size && j < num_activations) {
-            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, DIMS);
-            cudaDeviceSynchronize();
+            //TODO: /content/kan-cuda/cuda/cuda_kan.cu(45): error: kernel launch from __device__ or __global__ functions requires separate compilation mode^
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);
         }
@@ -81,7 +80,6 @@ namespace cuda_kan {
         int num_input = x.size(1);
         int num_activations = wb.size(1);
         int num_knots = cps.size(1);
-        int num_dims = 5; //[batch_size, num_input, num_activations, num_knots, degree]
 
         torch::Tensor x_contig = x.contiguous();
         torch::Tensor wb_contig = wb.contiguous();
