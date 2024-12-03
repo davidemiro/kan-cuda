@@ -34,16 +34,16 @@ namespace cuda_kan {
         int j = blockIdx.x * blockDim.x + threadIdx.z;
 
 
-        size_t x_idx = compute_offset(num_inputs, z, i)
+        size_t x_idx = compute_offset(num_inputs, z, i);
         size_t y_idx = compute_offset(num_activations,z,j);
         size_t w_idx = compute_offset(num_inputs, i, j);
 
         float result = 0.0;
 
         if (i < num_inputs && z < batch_size && j < num_activations) {
-            //TODO: add this line
-            //spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, k, num_knots);
-            result = result * ws[w_idx]+ silu(x[x_idx]) * wb[w_idx];
+            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, k, num_knots);
+            cudaDeviceSynchronize();
+            result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);
         }
 
@@ -99,19 +99,11 @@ namespace cuda_kan {
         float *y_ptr = y.data_ptr<float>();
         float *b_spline_basis_ptr = b_spline_basis.data_ptr<float>();
 
-        size_t* dims;
-        cudaMalloc(&dims, num_dims * sizeof(size_t));
-        cout << 2 << endl;
-
-        size_t* ids;
-        cudaMalloc(&dims, num_dims * sizeof(size_t));
-        cout << 3 << endl;
-
         int dim = MAX_DIM / 3;
         int num_block = max(batch_size, num_input);
         cout << 4 << endl;
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
-        b_spline_base<<<num_block, threads_block>>>(b_spline_basis, x, batch_size, num_input, num_activations, degree, knots, num_dims, dims, ids);
+        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_activations, degree, knots_ptr);
         cout << 5 << endl;
 
 
@@ -121,7 +113,7 @@ namespace cuda_kan {
         cout << 6 << endl;
         dim3 threads_block_(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
         cout << 7 << endl;
-        kan_activation_function<<<num_block, threads_block_>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots, num_dims, dims, ids);
+        kan_activation_function<<<num_block, threads_block_>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
         cout << 8 << endl;
         cudaDeviceSynchronize();
 
