@@ -17,7 +17,7 @@ __device__ size_t compute_offset(int dim, int i, int j){
 
 
 //compute offset b_spline_basis
-__device__ size_t compute_offset_base(int z, int i, int j, int k, int d,
+__device__ size_t compute_offset_base(int z, int i, int j, int d,
                                       int batch_size, int num_input, int num_knots, int degree){
 
     int stride_num_knots = d;
