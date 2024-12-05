@@ -101,6 +101,7 @@ namespace cuda_kan {
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
         b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_knots, degree, knots_ptr);
 
+        cudaDeviceSynchronize();
 
         num_block = max(batch_size,max(num_input,num_activations));
         dim3 threads_block_(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
