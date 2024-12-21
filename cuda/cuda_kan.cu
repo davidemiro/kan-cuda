@@ -10,6 +10,7 @@
 #include <pybind11/pybind11.h>
 #include <algorithm>
 #include <iomanip>
+#include <stdio.h>
 
 #include "spline.cu"
 
@@ -31,20 +32,28 @@ namespace cuda_kan {
     __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
+        printf("z: %d\n", z);
         int i = blockIdx.x * blockDim.x + threadIdx.y;
+        printf("i: %d\n", i);
         int j = blockIdx.x * blockDim.x + threadIdx.z;
+        printf("j: %d\n", i);
 
 
         size_t x_idx = compute_offset(num_input, z, i);
+        printf("x_idx: %d\n", x_idx);
         size_t y_idx = compute_offset(num_activations,z,j);
+        printf("y_idx: %d\n", y_idx);
         size_t w_idx = compute_offset(num_input, i, j);
+        printf("w_idx: %d\n", w_idx);
 
         float result = 1.0;
 
         if (i < num_input && z < batch_size && j < num_activations) {
             //TODO: /content/kan-cuda/cuda/cuda_kan.cu(45): error: kernel launch from __device__ or __global__ functions requires separate compilation mode^
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
+            printf("result: %d\n", w_idx);
             atomicAdd(&y[y_idx], result);
+            printf("y: %d\n", y[y_idx]);
         }
 
     }
