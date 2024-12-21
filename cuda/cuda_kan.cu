@@ -91,9 +91,13 @@ namespace cuda_kan {
 
 
         int batch_size = x.size(0);
+        printf("batch_size: %d\n", batch_size);
         int num_input = x.size(1);
+        printf("num_input: %d\n", num_input);
         int num_activations = wb.size(1);
+        printf("num_activations: %d\n", num_activations);
         int num_knots = cps.size(1);
+        printf("num_knots: %d\n", num_knots);
 
         torch::Tensor x_contig = x.contiguous();
         torch::Tensor wb_contig = wb.contiguous();
