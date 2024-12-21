@@ -38,23 +38,25 @@ namespace cuda_kan {
         printf("threadIdx.z: %d\n", threadIdx.z);
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
-        printf("z: %d\n", z);
         int i = blockIdx.x * blockDim.x + threadIdx.y;
-        printf("i: %d\n", i);
         int j = blockIdx.x * blockDim.x + threadIdx.z;
-        printf("j: %d\n", j);
-
 
         size_t x_idx = compute_offset(num_input, z, i);
-        printf("x_idx: %lu\n", x_idx);
         size_t y_idx = compute_offset(num_activations,z,j);
-        printf("y_idx: %lu\n", y_idx);
         size_t w_idx = compute_offset(num_input, i, j);
-        printf("w_idx: %lu\n", w_idx);
 
         float result = 1.0;
 
         if (i < num_input && z < batch_size && j < num_activations) {
+            printf("z: %d\n", z);
+            printf("i: %d\n", i);
+            printf("j: %d\n", j);
+
+            printf("x_idx: %lu\n", x_idx);
+            printf("y_idx: %lu\n", y_idx);
+            printf("w_idx: %lu\n", w_idx);
+
+
             //TODO: /content/kan-cuda/cuda/cuda_kan.cu(45): error: kernel launch from __device__ or __global__ functions requires separate compilation mode^
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             printf("result: %f\n", w_idx);
