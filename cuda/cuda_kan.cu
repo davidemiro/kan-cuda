@@ -43,7 +43,8 @@ namespace cuda_kan {
             size_t y_idx = compute_idx(num_activations,z,j);
             size_t w_idx = compute_idx(num_activations, i, j);
 
-            //TODO: /content/kan-cuda/cuda/cuda_kan.cu(45): error: kernel launch from __device__ or __global__ functions requires separate compilation mode^
+            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, k, num_knots);
+
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);
 
