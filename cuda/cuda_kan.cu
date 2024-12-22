@@ -103,6 +103,7 @@ namespace cuda_kan {
         float *b_spline_basis_ptr = b_spline_basis.data_ptr<float>();
 
         //TODO: remove
+        printf("batch_size: %d num_input: %d\n", batch_size, num_input);
         for(int z = 0; z < batch_size; z++){
             for(int i = 0; i < num_input; i++){
                 size_t idx = compute_idx_prova(batch_size, z, i);
