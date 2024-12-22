@@ -36,6 +36,13 @@ namespace cuda_kan {
         int j = blockIdx.x * blockDim.x + threadIdx.z;
 
         if (i < num_input && z < batch_size && j < num_activations) {
+            printf("z: %d\n", z);
+            printf("i: %d\n", i);
+            printf("j: %d\n", j);
+
+            printf("x_idx: %lu\n", x_idx);
+            printf("y_idx: %lu\n", y_idx);
+            printf("w_idx: %lu\n", w_idx);
 
             float result = 1.0;
 
@@ -46,7 +53,9 @@ namespace cuda_kan {
 
             //TODO: /content/kan-cuda/cuda/cuda_kan.cu(45): error: kernel launch from __device__ or __global__ functions requires separate compilation mode^
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
+            printf("result: %f\n", w_idx);
             atomicAdd(&y[y_idx], result);
+            printf("y: %f\n", y[y_idx]);
         }
 
     }
