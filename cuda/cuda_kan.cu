@@ -31,31 +31,21 @@ namespace cuda_kan {
 
     __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots) {
 
-        int z = blockIdx.x * blockDim.x + threadIdx.x;
-        int i = blockIdx.x * blockDim.x + threadIdx.y;
-        int j = blockIdx.x * blockDim.x + threadIdx.z;
-
-        size_t x_idx = compute_offset(num_input, z, i);
-        size_t y_idx = compute_offset(num_activations,z,j);
-        size_t w_idx = compute_offset(num_input, i, j);
-
-        float result = 1.0;
-
         if (i < num_input && z < batch_size && j < num_activations) {
-            printf("z: %d\n", z);
-            printf("i: %d\n", i);
-            printf("j: %d\n", j);
 
-            printf("x_idx: %lu\n", x_idx);
-            printf("y_idx: %lu\n", y_idx);
-            printf("w_idx: %lu\n", w_idx);
+            float result = 1.0;
 
+            int z = blockIdx.x * blockDim.x + threadIdx.x;
+            int i = blockIdx.x * blockDim.x + threadIdx.y;
+            int j = blockIdx.x * blockDim.x + threadIdx.z;
+
+            size_t x_idx = compute_idx(num_input, z, i);
+            size_t y_idx = compute_idx(num_activations,z,j);
+            size_t w_idx = compute_idx(num_input, i, j);
 
             //TODO: /content/kan-cuda/cuda/cuda_kan.cu(45): error: kernel launch from __device__ or __global__ functions requires separate compilation mode^
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
-            printf("result: %f\n", w_idx);
             atomicAdd(&y[y_idx], result);
-            printf("y: %f\n", y[y_idx]);
         }
 
     }
@@ -87,13 +77,9 @@ namespace cuda_kan {
 
 
         int batch_size = x.size(0);
-        printf("batch_size: %d\n", batch_size);
         int num_input = x.size(1);
-        printf("num_input: %d\n", num_input);
         int num_activations = wb.size(1);
-        printf("num_activations: %d\n", num_activations);
         int num_knots = cps.size(1);
-        printf("num_knots: %d\n", num_knots);
 
         torch::Tensor x_contig = x.contiguous();
         torch::Tensor wb_contig = wb.contiguous();
@@ -110,6 +96,14 @@ namespace cuda_kan {
         float *knots_ptr = knots_contig.data_ptr<float>();
         float *y_ptr = y.data_ptr<float>();
         float *b_spline_basis_ptr = b_spline_basis.data_ptr<float>();
+
+        //TODO: remove
+        for(int z = 0; z < batch_size; z++){
+            for(int i = 0; i < num_input; i++){
+                size_t idx = compute_idx(batch_size, z, i);
+                printf("idx: %lu z: %d i: %d value: %f\n", idx,z,i,x_ptr[idx]);
+            }
+        }
 
         int dim = MAX_DIM / 3;
         int num_block = max(batch_size, num_input);

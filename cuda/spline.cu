@@ -10,14 +10,14 @@
 using namespace std;
 
 
-//2d tensor offset computation
-__device__ size_t compute_offset(int dim, int i, int j){
-    return dim * j + i;
+//2d tensor idx computation
+__device__ size_t compute_idx(int dim, int i, int j){
+    return i + (dim * j) + j;
 }
 
 
-//compute offset b_spline_basis
-__device__ size_t compute_offset_base(int z, int i, int j, int d,
+//compute idx b_spline_basis
+__device__ size_t compute_idx_base(int z, int i, int j, int d,
                                       int batch_size, int num_input, int num_knots, int degree){
 
     int stride_num_knots = d;
@@ -53,11 +53,11 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     for(int d = 0; d < degree; d++) {
         for (int j = 0; j < num_knots; j++) {
 
-            idx = compute_offset_base(z, i, j, d, DIMS);
-            t = x[compute_offset(num_input, z, i)];
+            idx = compute_idx_base(z, i, j, d, DIMS);
+            t = x[compute_idx(num_input, z, i)];
             if (d == 0) {
                 // Base case: piecewise constant function (degree 0)
-                if (knots[compute_offset(num_knots, i, j)]<= t && t < knots[compute_offset(num_knots, i, j + 1)]) {
+                if (knots[compute_idx(num_knots, i, j)]<= t && t < knots[compute_idx(num_knots, i, j + 1)]) {
                     b_spline_basis[idx] = 1.0;
                 } else {
                     b_spline_basis[idx] = 0.0;
@@ -65,16 +65,16 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
             } else {
 
                 // Check the left term (avoid division by zero)
-                if (knots[compute_offset(num_knots, i, j + d)] != knots[compute_offset(num_knots, i, j)]) {
-                    idx_ = compute_offset_base(z, i, j, d - 1, DIMS);
-                    leftTerm = (t - knots[compute_offset(num_knots,i,j)]) / (knots[compute_offset(num_knots, i, j + d)] - knots[compute_offset(num_knots, i, j)] * b_spline_basis[idx_]);
+                if (knots[compute_idx(num_knots, i, j + d)] != knots[compute_idx(num_knots, i, j)]) {
+                    idx_ = compute_idx_base(z, i, j, d - 1, DIMS);
+                    leftTerm = (t - knots[compute_idx(num_knots,i,j)]) / (knots[compute_idx(num_knots, i, j + d)] - knots[compute_idx(num_knots, i, j)] * b_spline_basis[idx_]);
                 }
 
                 // Check the right term (avoid division by zero)
                 //TODO: fix the error j + d  + 1 > num_knots
-                if (knots[compute_offset(num_knots, i, j + d + 1)] != knots[compute_offset(num_knots, i, j + 1)]) {
-                    idx_ = compute_offset_base(z, i, j + 1, d - 1, DIMS);
-                    rightTerm = (knots[compute_offset(num_knots, i, j + d + 1)] - t) / (knots[compute_offset(num_knots, i, j + d + 1)] - knots[compute_offset(num_knots, i, j + 1)]) * b_spline_basis[idx_];
+                if (knots[compute_idx(num_knots, i, j + d + 1)] != knots[compute_idx(num_knots, i, j + 1)]) {
+                    idx_ = compute_idx_base(z, i, j + 1, d - 1, DIMS);
+                    rightTerm = (knots[compute_idx(num_knots, i, j + d + 1)] - t) / (knots[compute_idx(num_knots, i, j + d + 1)] - knots[compute_idx(num_knots, i, j + 1)]) * b_spline_basis[idx_];
                 }
                 b_spline_basis[idx] = leftTerm + rightTerm;
             }
@@ -92,11 +92,11 @@ __global__ void spline(float* result, float* cps, float* b_spline_basis, int z, 
      * d : degree
      */
 
-    size_t idx = compute_offset_base(z, i, j, degree - 1, DIMS);
+    size_t idx = compute_idx_base(z, i, j, degree - 1, DIMS);
     float mul = 0.0;
     if (k < num_knots) {
 
-        mul = cps[compute_offset(num_knots, i, k)] * b_spline_basis[idx];
+        mul = cps[compute_idx(num_knots, i, k)] * b_spline_basis[idx];
         atomicAdd(result, mul);
     }
 }

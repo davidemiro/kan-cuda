@@ -32,14 +32,15 @@ class KolmogorovArnoldLayer(nn.Module):
         return output
 
 
-x = torch.Tensor([[1.0, 2.0, 3.0]]).to("cuda")
+x = torch.Tensor([[1.0, 2.0, 3.0],[4.0, 5.0, 6.0]]).to("cuda")
 
 layer = KolmogorovArnoldLayer(3,5,7, [0,100], 2)
 
-print("9")
 y = layer(x)
-print("10")
 print(y.to("cuda"))
+
+
+
 
 
 
