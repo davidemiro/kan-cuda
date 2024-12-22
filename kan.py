@@ -23,7 +23,6 @@ class KolmogorovArnoldLayer(nn.Module):
     def forward(self, x :torch.Tensor):
         if x.is_cuda:
             print("IS_CUDA")
-            output = None
             output = cuda_kan.kan_layer(x, self.wb, self.ws, self.knots, self.cps, self.degree)
         else:
             print("IS_CPP")
