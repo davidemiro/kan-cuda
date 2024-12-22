@@ -43,7 +43,7 @@ namespace cuda_kan {
             size_t y_idx = compute_idx(num_activations,z,j);
             size_t w_idx = compute_idx(num_activations, i, j);
 
-            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, degree, num_knots);
+            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, batch_size, num_input, num_knots, degree);
             cudaDeviceSynchronize();
 
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
@@ -105,13 +105,11 @@ namespace cuda_kan {
         int num_block = max(batch_size, num_input);
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
         b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_knots, degree, knots_ptr);
-
         cudaDeviceSynchronize();
 
         num_block = max(batch_size,max(num_input,num_activations));
         dim3 threads_block_(min(dim + 1,batch_size),min(dim,num_input),min(dim,num_activations)); // batch_size x num_input x num_activations
         kan_activation_function<<<num_block, threads_block_>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
-
         cudaDeviceSynchronize();
 
         return y;
