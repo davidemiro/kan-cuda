@@ -28,6 +28,11 @@ namespace cuda_kan {
         return x / (1 + expf(x * -1));
     }
 
+    //TODO: remove
+    size_t compute_idx_prova(int dim, int i, int j){
+        return i + (dim * j) + j;
+    }
+
 
     __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots) {
 
@@ -100,7 +105,7 @@ namespace cuda_kan {
         //TODO: remove
         for(int z = 0; z < batch_size; z++){
             for(int i = 0; i < num_input; i++){
-                size_t idx = compute_idx(batch_size, z, i);
+                size_t idx = compute_idx_prova(batch_size, z, i);
                 printf("idx: %lu z: %d i: %d value: %f\n", idx,z,i,x_ptr[idx]);
             }
         }
