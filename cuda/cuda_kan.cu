@@ -44,6 +44,7 @@ namespace cuda_kan {
             size_t w_idx = compute_idx(num_activations, i, j);
 
             spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, k, num_knots);
+            cudaDeviceSynchronize();
 
             result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);
