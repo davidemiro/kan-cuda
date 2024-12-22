@@ -39,8 +39,8 @@ namespace cuda_kan {
 
             float result = 1.0;
 
-            size_t x_idx = compute_idx(num_input, z, i);
-            size_t y_idx = compute_idx(num_activations,z,j);
+            size_t x_idx = compute_idx(batch_size, z, i);
+            size_t y_idx = compute_idx(batch_size,z,j);
             size_t w_idx = compute_idx(num_input, i, j);
 
             //TODO: /content/kan-cuda/cuda/cuda_kan.cu(45): error: kernel launch from __device__ or __global__ functions requires separate compilation mode^
