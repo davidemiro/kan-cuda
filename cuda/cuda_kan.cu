@@ -108,7 +108,7 @@ namespace cuda_kan {
             for(int i = 0; i < num_input; i++){
                 size_t idx = compute_idx_prova(batch_size, z, i);
                 printf("Ciao");
-                printf("idx: %lu z: %d i: %d value: %f\n", idx, z, i, x_ptr[idx]);
+                printf("idx: %lu z: %d i: %d\n", idx, z, i);
             }
         }
 
