@@ -31,13 +31,15 @@ namespace cuda_kan {
 
     __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots) {
 
+        int z = blockIdx.x * blockDim.x + threadIdx.x;
+        int i = blockIdx.x * blockDim.x + threadIdx.y;
+        int j = blockIdx.x * blockDim.x + threadIdx.z;
+
         if (i < num_input && z < batch_size && j < num_activations) {
 
             float result = 1.0;
 
-            int z = blockIdx.x * blockDim.x + threadIdx.x;
-            int i = blockIdx.x * blockDim.x + threadIdx.y;
-            int j = blockIdx.x * blockDim.x + threadIdx.z;
+
 
             size_t x_idx = compute_idx(num_input, z, i);
             size_t y_idx = compute_idx(num_activations,z,j);
