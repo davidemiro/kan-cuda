@@ -30,7 +30,7 @@ namespace cuda_kan {
 
     //TODO: remove
     size_t compute_idx_prova(int dim, int i, int j){
-        return i + (dim * j) + j;
+        return j + (dim*i) + i;
     }
 
 
