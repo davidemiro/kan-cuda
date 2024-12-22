@@ -39,8 +39,6 @@ namespace cuda_kan {
 
             float result = 1.0;
 
-
-
             size_t x_idx = compute_idx(num_input, z, i);
             size_t y_idx = compute_idx(num_activations,z,j);
             size_t w_idx = compute_idx(num_input, i, j);
