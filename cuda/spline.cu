@@ -82,7 +82,26 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     }
 }
 
-__global__ void spline(float* result, float* cps, float* b_spline_basis, int z, int i, int j, int batch_size, int num_input, int num_knots, int degree) {
+__device__ void spline(float* cps, float* b_spline_basis, int z, int i, int j, int batch_size, int num_input, int num_knots, int degree) {
+    /*
+     * z : z-th batch element
+     * i : i-th element of the input
+     * j : j-th activation function
+     * k : k-th knot
+     * d : degree
+     */
+
+    float result = 0.0;
+    size_t idx = compute_idx_base(z, i, j, degree - 1, DIMS);
+
+    for(int k = 0; k < num_knots; k++){
+        result = result + (cps[compute_idx(num_knots, i, k)] * b_spline_basis[idx]);
+    }
+
+    return result;
+}
+
+__global__ void spline_parallel(float* result, float* cps, float* b_spline_basis, int z, int i, int j, int batch_size, int num_input, int num_knots, int degree) {
     int k = blockIdx.x * blockDim.x + threadIdx.x;
     /*
      * z : z-th batch element

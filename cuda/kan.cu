@@ -43,10 +43,7 @@ namespace cuda_kan {
             size_t y_idx = compute_idx(num_activations,z,j);
             size_t w_idx = compute_idx(num_activations, i, j);
 
-            spline<<<1,num_knots>>>(&result, cps, b_spline_basis, z, i, j, batch_size, num_input, num_knots, degree);
-            __syncthreads();
-
-            result = result * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
+            result = spline(cps, b_spline_basis, z, i, j, DIMS) * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);
 
             printf("z: %d i: %d j: %d x_idx: %lu y_idx: %lu w_idx: %lu x: %f result: %f y: %f\n", z,i,j,x_idx,y_idx, w_idx,x[x_idx], result, y[y_idx]);
