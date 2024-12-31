@@ -82,7 +82,7 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     }
 }
 
-__device__ void spline(float* cps, float* b_spline_basis, int z, int i, int j, int batch_size, int num_input, int num_knots, int degree) {
+__device__ float spline(float* cps, float* b_spline_basis, int z, int i, int j, int batch_size, int num_input, int num_knots, int degree) {
     /*
      * z : z-th batch element
      * i : i-th element of the input
