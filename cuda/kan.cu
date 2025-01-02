@@ -45,8 +45,6 @@ namespace cuda_kan {
 
             result = spline(cps, b_spline_basis, z, i, j, DIMS) * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);
-
-            printf("z: %d i: %d j: %d x_idx: %lu y_idx: %lu w_idx: %lu x: %f result: %f y: %f\n", z,i,j,x_idx,y_idx, w_idx,x[x_idx], result, y[y_idx]);
         }
 
     }
@@ -101,7 +99,7 @@ namespace cuda_kan {
         int dim = MAX_DIM / 3;
         int num_block = max(batch_size, num_input);
         dim3 threads_block(min(dim + 1,batch_size),min(dim,num_input)); // batch_size x num_input
-        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, batch_size, num_input, num_knots, degree, knots_ptr);
+        b_spline_base<<<num_block, threads_block>>>(b_spline_basis_ptr, x_ptr, DIMS, knots_ptr);
         cudaDeviceSynchronize();
 
         num_block = max(batch_size,max(num_input,num_activations));

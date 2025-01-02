@@ -22,21 +22,25 @@ class KolmogorovArnoldLayer(nn.Module):
 
     def forward(self, x :torch.Tensor):
         if x.is_cuda:
-            print("IS_CUDA")
             output = cuda_kan.kan_layer(x, self.wb, self.ws, self.knots, self.cps, self.degree)
         else:
-            print("IS_CPP")
+            pass
             #output = cpp_kan.kan_layer(x, self.wb, self.ws, self.knots, self.cps, self.degree)
 
         return output
 
 
-x = torch.Tensor([[1.0, 2.0, 3.0],[4.0, 5.0, 6.0]]).to("cuda")
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
 
-layer = KolmogorovArnoldLayer(3,5,7, [0,100], 2)
+x = torch.rand(16,20).to("cuda")
+
+layer = KolmogorovArnoldLayer(20,35,7, [0,100], 3)
 
 y = layer(x)
-print(y.to("cuda"))
+y.to("cpu")
+
+print(y)
 
 
 
