@@ -99,7 +99,7 @@ namespace cuda_kan {
         batch_size = 3500;
         num_input = 4200;
 
-        dim3 gridDim(CEIL_DIV(batch_size,32), CEIL_DIV(num_input,32));
+        dim3 gridDim(ceil(batch_size,32), ceil(num_input,32));
         dim3 blockDim(32,32,1);
         b_spline_base<<<gridDim, blockDim>>>(b_spline_basis_ptr, x_ptr, DIMS, knots_ptr);
         cudaDeviceSynchronize();
