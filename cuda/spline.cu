@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include <torch/extension.h>
+#include <stdio.h>
 #define DIMS batch_size, num_input, num_knots, degree
 
 using namespace std;
@@ -40,8 +41,8 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     int z = blockIdx.x * blockDim.x + threadIdx.x;
     int i = blockIdx.y * blockDim.y + threadIdx.y;
 
-    println("blockIdx.x: %d blockIdx.y: %d threadIdx.x: %d threadIdx.y: %d",blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y);
-    println("z: %d i: %d", z, i);
+    printf("blockIdx.x: %d blockIdx.y: %d threadIdx.x: %d threadIdx.y: %d\n",blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y);
+    printf("z: %d i: %d\n", z, i);
     /*
     float t;
     float leftTerm = 0.0;
