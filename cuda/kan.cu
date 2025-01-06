@@ -32,8 +32,8 @@ namespace cuda_kan {
     __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
-        int i = blockIdx.x * blockDim.x + threadIdx.y;
-        int j = blockIdx.x * blockDim.x + threadIdx.z;
+        int i = blockIdx.y * blockDim.y + threadIdx.y;
+        int j = blockIdx.z * blockDim.z + threadIdx.z;
 
         if (i < num_input && z < batch_size && j < num_activations) {
 
@@ -96,13 +96,19 @@ namespace cuda_kan {
         float *y_ptr = y.data_ptr<float>();
         float *b_spline_basis_ptr = b_spline_basis.data_ptr<float>();
 
+        batch_size = 3500;
+        num_input = 4200;
 
-        b_spline_base<<<batch_size, num_input>>>(b_spline_basis_ptr, x_ptr, DIMS, knots_ptr);
+        dim3 gridDim(CEIL_DIV(batch_size,32), CEIL_DIV(num_input,32));
+        dim3 blockDim(32,32,1);
+        b_spline_base<<<gridDim, blockDim>>>(b_spline_basis_ptr, x_ptr, DIMS, knots_ptr);
         cudaDeviceSynchronize();
 
+        /*
         dim3 threads_block(num_input,num_activations); // batch_size x num_input x num_activations
         kan_activation_function<<<batch_size, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
         cudaDeviceSynchronize();
+        */
 
         return y;
 
