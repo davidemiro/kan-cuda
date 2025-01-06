@@ -34,6 +34,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 x = torch.rand(3,3).to("cuda")
+print(x)
 
 layer = KolmogorovArnoldLayer(3,5,5, [0,100], 3)
 
