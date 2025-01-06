@@ -32,7 +32,7 @@ namespace cuda_kan {
     __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots) {
 
         for(int i = 0; i < 9; i++){
-            printf("%d\n",x_ptr[i]);
+            printf("%d\n",x[i]);
         }
         /*
         int z = blockIdx.x * blockDim.x + threadIdx.x;
