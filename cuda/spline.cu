@@ -40,8 +40,9 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     int z = blockIdx.x * blockDim.x + threadIdx.x;
     int i = blockIdx.y * blockDim.y + threadIdx.y;
 
-    println("blockIdx.x: %d blockIdx.y: %d threadIdx.x: %d threadIdx.y: %d",blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y)
-    println("z: %d i: %d", z, i)
+    println("blockIdx.x: %d blockIdx.y: %d threadIdx.x: %d threadIdx.y: %d",blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y);
+    println("z: %d i: %d", z, i);
+    /*
     float t;
     float leftTerm = 0.0;
     float rightTerm = 0.0;
@@ -83,6 +84,7 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
             }
         }
     }
+     */
 }
 
 __device__ float spline(float* cps, float* b_spline_basis, int z, int i, int j, int batch_size, int num_input, int num_knots, int degree) {
