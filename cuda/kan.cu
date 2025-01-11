@@ -29,6 +29,7 @@ namespace cuda_kan {
     }
 
 
+    /*
     __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots) {
 
         int z = blockIdx.x * blockDim.x + threadIdx.x;
@@ -48,6 +49,7 @@ namespace cuda_kan {
         }
 
     }
+    */
 
 
     at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int64_t degree) {
@@ -104,10 +106,12 @@ namespace cuda_kan {
 
 
         /*
+        //TODO: num_input x num_activations <= 1024
         dim3 threads_block(num_input,num_activations); // batch_size x num_input x num_activations
         kan_activation_function<<<batch_size, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
         cudaDeviceSynchronize();
          */
+
 
 
         return b_spline_basis;

@@ -42,7 +42,7 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     int i = threadIdx.x;
 
     //dynamic cache
-    extern __shared__ float* cache_ptr[];
+    extern __shared__ float cache_ptr[];
     float* knots_cache = cache_ptr;
 
     //coalesce load to cache, using grid-stride loop to handle the case batch_size * num_input < num_knots * num_input
@@ -94,7 +94,7 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
             }
         }
     }
-     */
+
 }
 
 __device__ float spline(float* cps, float* b_spline_basis, int z, int i, int j, int batch_size, int num_input, int num_knots, int degree) {
