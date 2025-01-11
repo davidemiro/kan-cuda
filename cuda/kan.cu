@@ -31,10 +31,6 @@ namespace cuda_kan {
 
     __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots) {
 
-        for(int i = 0; i < 9; i++){
-            printf("%f\n",x[i]);
-        }
-        /*
         int z = blockIdx.x * blockDim.x + threadIdx.x;
         int i = blockIdx.y * blockDim.y + threadIdx.y;
         int j = blockIdx.z * blockDim.z + threadIdx.z;
@@ -50,13 +46,11 @@ namespace cuda_kan {
             result = spline(cps, b_spline_basis, z, i, j, DIMS) * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);
         }
-        */
 
     }
 
 
     at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int64_t degree) {
-
         /*
          * x : [batch_size, input_dim]
          * y : [batch_size, output_dim]
@@ -103,18 +97,18 @@ namespace cuda_kan {
         float *b_spline_basis_ptr = b_spline_basis.data_ptr<float>();
 
 
+        cudaGetDeviceProperties();
         /*
         dim3 gridDim(ceil(batch_size/32), ceil(num_input/32));
         dim3 blockDim(32,32,1);
         b_spline_base<<<gridDim, blockDim>>>(b_spline_basis_ptr, x_ptr, DIMS, knots_ptr);
         cudaDeviceSynchronize();
-         */
 
 
-        dim3 threads_block(1,1); // batch_size x num_input x num_activations
-        kan_activation_function<<<1, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
+        dim3 threads_block(num_input,num_activations); // batch_size x num_input x num_activations
+        kan_activation_function<<<batch_size, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
         cudaDeviceSynchronize();
-
+         */
 
         return y;
 
