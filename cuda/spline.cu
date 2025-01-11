@@ -50,13 +50,8 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
          x < num_knots*num_input;
          x += blockDim.x * gridDim.x){
         knots_cache[x] = knots[x];
-        if(threadIdx.x == 0){
-            printf("knot: %f \n", knots_cache[x]);
-        }
     }
     __syncthreads();
-
-    printf("cache knot: %f knot: %f\n", knots_cache[num_input*num_knots - 1], knots[num_input*num_knots - 1]);
 
 
 
