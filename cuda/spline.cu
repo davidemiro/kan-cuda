@@ -56,7 +56,7 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     }
     __syncthreads();
 
-    printf("knot: %f \n", knots_cache[num_input*num_knots - 1]);
+    printf("cache knot: %f knot: %f\n", knots_cache[num_input*num_knots - 1], knots[num_input*num_knots - 1]);
 
 
 
