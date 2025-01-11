@@ -61,9 +61,9 @@ namespace cuda_kan {
          * knots : [input_dim, num_knots]
          */
 
-        TORCH_CHECK(wb.size(0) < MAX_DIM); //TODO: review check
-        TORCH_CHECK(knots.size(0) < MAX_DIM);
-        TORCH_CHECK(cps.size(0) < MAX_DIM);
+        TORCH_CHECK(wb.size(0) <= MAX_DIM); //TODO: review check
+        TORCH_CHECK(knots.size(0) <= MAX_DIM);
+        TORCH_CHECK(cps.size(0) <= MAX_DIM);
 
         TORCH_CHECK(x.dtype() == torch::kFloat);
         TORCH_CHECK(wb.dtype() == torch::kFloat);
