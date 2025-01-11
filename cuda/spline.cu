@@ -38,12 +38,21 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
      * k : degree
      */
 
-    int z = blockIdx.x * blockDim.x + threadIdx.x;
-    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    int z = blockIdx.x;
+    int i = threadIdx.x;
 
-    printf("blockIdx.x: %d blockIdx.y: %d threadIdx.x: %d threadIdx.y: %d\n",blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y);
-    printf("z: %d i: %d\n", z, i);
-    /*
+    //dynamic cache
+    extern __shared__ float* cache_ptr[];
+    float* knots_cache = cache_ptr;
+
+    //coalesce load to cache, using grid-stride loop to handle the case batch_size * num_input < num_knots * num_input
+    for (int x = blockIdx.x * blockDim.x + threadIdx.x;
+         x < num_knots*num_input;
+         x += blockDim.x * gridDim.x){
+        knots_cache[x] = knots[x];
+    }
+
+
     float t;
     float leftTerm = 0.0;
     float rightTerm = 0.0;
@@ -54,7 +63,7 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
         return;
     }
 
-    //[batch_size, num_input, num_activations, num_knots, degree]
+
     for(int d = 0; d < degree; d++) {
         for (int j = 0; j < num_knots; j++) {
 

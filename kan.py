@@ -33,10 +33,17 @@ class KolmogorovArnoldLayer(nn.Module):
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
-x = torch.rand(3,3).to("cuda")
+batch_size = 256
+num_input = 512
+num_knots = 16
+num_output = 1024
+degree = 3
+
+
+x = torch.rand(batch_size,num_input).to("cuda")
 print(x)
 
-layer = KolmogorovArnoldLayer(3,5,5, [0,100], 3)
+layer = KolmogorovArnoldLayer(num_input,num_output,num_knots, [0,100], degree)
 
 y = layer(x)
 y.to("cpu")

@@ -97,20 +97,20 @@ namespace cuda_kan {
         float *b_spline_basis_ptr = b_spline_basis.data_ptr<float>();
 
 
-        cudaGetDeviceProperties();
-        /*
-        dim3 gridDim(ceil(batch_size/32), ceil(num_input/32));
-        dim3 blockDim(32,32,1);
-        b_spline_base<<<gridDim, blockDim>>>(b_spline_basis_ptr, x_ptr, DIMS, knots_ptr);
+
+        int cache_size = num_input * num_knots * sizeof(float);
+        b_spline_base<<<batch_size,num_input,cache_size>>>(b_spline_basis_ptr, x_ptr, DIMS, knots_ptr);
         cudaDeviceSynchronize();
 
 
+        /*
         dim3 threads_block(num_input,num_activations); // batch_size x num_input x num_activations
         kan_activation_function<<<batch_size, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
         cudaDeviceSynchronize();
          */
 
-        return y;
+
+        return b_spline_basis;
 
 
     }
