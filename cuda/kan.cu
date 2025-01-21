@@ -16,6 +16,7 @@
 
 #define MAX_DIM 1024
 #define MAX_THD 1024
+#define CHUNK 32
 #define DIMS batch_size, num_input, num_knots, degree
 
 
@@ -29,12 +30,56 @@ namespace cuda_kan {
     }
 
 
-    /*
+    __global__ void kan_activation_function_chunk(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots){
+        int z = blockIdx.x;
+        int i = threadIdx.x;
+        int idx, x_idx, w_idx, y_idx, stride;
+
+        float result = 0.0;
+        extern __shared__ float cache_ptr[];
+        float* x_l, bsp_l;
+
+        if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
+
+
+            bsp_l = cache_ptr;
+            x_l = bsp_l[num_knots * num_input];
+
+
+
+
+            //load b_spline_ptr(1, 1, CHUNK, num_knots)
+            for (int j = threadIdx.x; j < num_knots; j += CHUNK) {
+                idx = compute_idx_base(z, i, j, degree);
+                x_idx = compute_idx(num_knots, i, j);
+                bsp_l[idx] = b_spline_basis[x_idx];
+            }
+            __syncthreads();
+
+
+            //load x(CHUNK)
+            idx = compute_idx(num_input, z, i + blockIdx.y * CHUNK);
+            x_l[idx] = x[i];
+            __syncthreads();
+
+
+            for (int j = 0; j < num_activations; j += CHUNK) {
+
+                stride = fminf(CHUNK, num_activations - j);
+                for (int k = 0; k < stride; k++) {
+                    w_idx = compute_idx(num_activations, i, j + k);
+                    result = spline(cps, bsp_l, z, i, j + k, DIMS) * ws[w_idx] + silu(x_l[i]) * wb[w_idx];
+                    atomicAdd(&y[compute_idx(num_activations,z,j + k)], result);
+                }
+            }
+        }
+    }
+
     __global__ void kan_activation_function(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots) {
 
-        int z = blockIdx.x * blockDim.x + threadIdx.x;
-        int i = blockIdx.y * blockDim.y + threadIdx.y;
-        int j = blockIdx.z * blockDim.z + threadIdx.z;
+        int z = blockIdx.x;
+        int i = threadIdx.x;
+        int j = threadIdx.y;
 
         if (i < num_input && z < batch_size && j < num_activations) {
 
@@ -49,7 +94,7 @@ namespace cuda_kan {
         }
 
     }
-    */
+
 
 
     at::Tensor kan_layer(at::Tensor x, at::Tensor wb, at::Tensor ws, at::Tensor knots, at::Tensor cps, int64_t degree) {
@@ -58,7 +103,7 @@ namespace cuda_kan {
          * y : [batch_size, output_dim]
          * wb,ws: [input_dim, output_dim]
          * cps : [output_dim, num_knots]
-         * knots : [input_dim, num_knots]
+         * knots : [num_knots]
          */
 
         TORCH_CHECK(wb.size(0) <= MAX_DIM); //TODO: review check
@@ -88,7 +133,7 @@ namespace cuda_kan {
         torch::Tensor cps_contig = cps.contiguous();
         torch::Tensor knots_contig = knots.contiguous();
         torch::Tensor y = torch::zeros({x.size(0), wb.size(1)}, x.options()).contiguous();
-        torch::Tensor b_spline_basis = torch::empty({batch_size,num_input,num_knots,degree}, wb.options()).contiguous();
+        torch::Tensor b_spline_basis = torch::empty({degree + 1,batch_size,num_input,num_knots}, wb.options()).contiguous();
 
         float *x_ptr = x_contig.data_ptr<float>();
         float *cps_ptr = cps_contig.data_ptr<float>();
@@ -99,22 +144,25 @@ namespace cuda_kan {
         float *b_spline_basis_ptr = b_spline_basis.data_ptr<float>();
 
 
-
         int cache_size = num_input * num_knots * sizeof(float);
         b_spline_base<<<batch_size,num_input,cache_size>>>(b_spline_basis_ptr, x_ptr, DIMS, knots_ptr);
         cudaDeviceSynchronize();
 
 
-        /*
-        //TODO: num_input x num_activations <= 1024
-        dim3 threads_block(num_input,num_activations); // batch_size x num_input x num_activations
-        kan_activation_function<<<batch_size, threads_block>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
+        if (num_input < CHUNK && num_activations < CHUNK){
+            dim3 thread_blocks(num_input, num_activations);
+            kan_activation_function<<<batch_size,thread_blocks>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
+
+        }else {
+            cache_size = CHUNK * CHUNK * num_knots * sizeof(float);
+            dim3 grid_blocks(batch_size, ceil(num_input / CHUNK));
+            kan_activation_function_chunk<<<grid_blocks, CHUNK, cache_size>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr,
+                                                                              b_spline_basis_ptr, degree, batch_size,
+                                                                              num_input, num_activations, num_knots);
+        }
+
         cudaDeviceSynchronize();
-         */
-
-
-
-        return b_spline_basis;
+        return y;
 
 
     }

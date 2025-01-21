@@ -21,12 +21,13 @@ __device__ size_t compute_idx(int dim, int i, int j){
 __device__ size_t compute_idx_base(int z, int i, int j, int d,
                                       int batch_size, int num_input, int num_knots, int degree){
 
-    int stride_num_knots = d;
-    int stride_num_input = stride_num_knots * num_knots;
-    int stride_batch_size = stride_num_input * num_input;
+    int stride_degree = num_input * num_knots * batch_size;
+    int stride_batch_size = num_input * num_knots;
+    int stride_num_input = num_knots;
 
 
-    return (z * stride_batch_size) + (i * stride_num_input) + (j * stride_num_knots) + d;
+
+    return (d * stride_degree) + (z * stride_batch_size) + (i * stride_num_input) + j
 
 }
 
@@ -45,11 +46,12 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     extern __shared__ float cache_ptr[];
     float* knots_cache = cache_ptr;
 
-    //coalesce load to cache, using grid-stride loop to handle the case batch_size * num_input < num_knots * num_input
+    //coalesce load to cache, using grid-stride loop to handle the case batch_size * num_input < num_knots
     for (int x = blockIdx.x * blockDim.x + threadIdx.x;
-         x < num_knots*num_input;
+         x < num_knots;
          x += blockDim.x * gridDim.x){
         knots_cache[x] = knots[x];
+        printf("knots %f cache_knots %f", knots[x], cache_knots[x]);
     }
     __syncthreads();
 
@@ -67,13 +69,12 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     }
 
 
-    for(int d = 0; d < degree; d++) {
+    for(int d = 0; d <= degree; d++) {
         for (int j = 0; j < num_knots; j++) {
 
             idx = compute_idx_base(z, i, j, d, DIMS);
             t = x[compute_idx(num_input, z, i)];
             if (d == 0) {
-                // Base case: piecewise constant function (degree 0)
                 if (knots[compute_idx(num_knots, i, j)]<= t && t < knots[compute_idx(num_knots, i, j + 1)]) {
                     b_spline_basis[idx] = 1.0;
                 } else {
@@ -81,14 +82,11 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
                 }
             } else {
 
-                // Check the left term (avoid division by zero)
                 if (knots[compute_idx(num_knots, i, j + d)] != knots[compute_idx(num_knots, i, j)]) {
                     idx_ = compute_idx_base(z, i, j, d - 1, DIMS);
                     leftTerm = (t - knots[compute_idx(num_knots,i,j)]) / (knots[compute_idx(num_knots, i, j + d)] - knots[compute_idx(num_knots, i, j)] * b_spline_basis[idx_]);
                 }
 
-                // Check the right term (avoid division by zero)
-                //TODO: fix the error j + d  + 1 > num_knots
                 if (knots[compute_idx(num_knots, i, j + d + 1)] != knots[compute_idx(num_knots, i, j + 1)]) {
                     idx_ = compute_idx_base(z, i, j + 1, d - 1, DIMS);
                     rightTerm = (knots[compute_idx(num_knots, i, j + d + 1)] - t) / (knots[compute_idx(num_knots, i, j + d + 1)] - knots[compute_idx(num_knots, i, j + 1)]) * b_spline_basis[idx_];
