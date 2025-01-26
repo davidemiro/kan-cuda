@@ -36,7 +36,7 @@ namespace cuda_kan {
         int idx, x_idx, w_idx, y_idx, stride;
 
         float result = 0.0;
-        extern __shared__ float cache_ptr[];
+        extern __shared__ float* cache_ptr;
         float* x_l, bsp_l;
 
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
@@ -68,7 +68,7 @@ namespace cuda_kan {
                 stride = fminf(CHUNK, num_activations - j);
                 for (int k = 0; k < stride; k++) {
                     w_idx = compute_idx(num_activations, i, j + k);
-                    result = spline(cps, bsp_l, z, i, j + k, DIMS) * ws[w_idx] + silu(x_l[i]) * wb[w_idx];
+                    result = spline(cps, bsp_l, 0, i, j + k, 0, num_input, num_knots, 0) * ws[w_idx] + silu(x_l[i]) * wb[w_idx];
                     atomicAdd(&y[compute_idx(num_activations,z,j + k)], result);
                 }
             }
