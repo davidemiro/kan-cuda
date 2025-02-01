@@ -43,7 +43,7 @@ namespace cuda_kan {
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
 
             bsp_l = cache_ptr;
-            x_l = bsp_l[num_knots * num_input];
+            x_l = &bsp_l[num_knots * num_input];
 
             //load b_spline_ptr(1, 1, CHUNK, num_knots)
             for (int j = threadIdx.x; j < num_knots; j += CHUNK) {
