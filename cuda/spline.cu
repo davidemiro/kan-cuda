@@ -27,7 +27,7 @@ __device__ size_t compute_idx_base(int z, int i, int j, int d,
 
 
 
-    return (d * stride_degree) + (z * stride_batch_size) + (i * stride_num_input) + j
+    return (d * stride_degree) + (z * stride_batch_size) + (i * stride_num_input) + j;
 
 }
 
@@ -42,6 +42,12 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     int z = blockIdx.x;
     int i = threadIdx.x;
 
+    float t;
+    float leftTerm = 0.0;
+    float rightTerm = 0.0;
+    size_t idx = 0;
+    size_t idx_ = 0;
+
     //dynamic cache
     extern __shared__ float cache_ptr[];
     float* knots_cache = cache_ptr;
@@ -54,19 +60,9 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     }
     __syncthreads();
 
-
-
-
-    float t;
-    float leftTerm = 0.0;
-    float rightTerm = 0.0;
-    size_t idx = 0;
-    size_t idx_ = 0;
-
     if(z >= batch_size || i >= num_input){
         return;
     }
-
 
     for(int d = 0; d <= degree; d++) {
         for (int j = 0; j < num_knots; j++) {
