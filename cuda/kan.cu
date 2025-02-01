@@ -33,33 +33,26 @@ namespace cuda_kan {
     __global__ void kan_activation_function_chunk(float* x, float* y, float* wb, float* ws, float* cps, float* b_spline_basis, int degree, int batch_size, int num_input, int num_activations, int num_knots){
         int z = blockIdx.x;
         int i = threadIdx.x;
-        int idx, x_idx, w_idx, y_idx, stride;
+        int  w_idx, stride;
 
         float result = 0.0;
         extern __shared__ float* cache_ptr;
-        float* x_l, bsp_l;
+        float* x_l;
+        float* bsp_l;
 
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
-
 
             bsp_l = cache_ptr;
             x_l = bsp_l[num_knots * num_input];
 
-
-
-
             //load b_spline_ptr(1, 1, CHUNK, num_knots)
             for (int j = threadIdx.x; j < num_knots; j += CHUNK) {
-                idx = compute_idx_base(z, i, j, degree);
-                x_idx = compute_idx(num_knots, i, j);
-                bsp_l[idx] = b_spline_basis[x_idx];
+                bsp_l[compute_idx(i,j, num_knots)] = b_spline_basis[compute_idx_base(z, i, j, degree, DIMS)];
             }
             __syncthreads();
 
-
             //load x(CHUNK)
-            idx = compute_idx(num_input, z, i + blockIdx.y * CHUNK);
-            x_l[idx] = x[i];
+            x_l[i] = x[compute_idx(z, i + blockIdx.y * CHUNK, num_input)];
             __syncthreads();
 
 
@@ -67,9 +60,9 @@ namespace cuda_kan {
 
                 stride = fminf(CHUNK, num_activations - j);
                 for (int k = 0; k < stride; k++) {
-                    w_idx = compute_idx(num_activations, i, j + k);
+                    w_idx = compute_idx(i, j + k, num_activations);
                     result = spline(cps, bsp_l, 0, i, j + k, 0, num_input, num_knots, 0) * ws[w_idx] + silu(x_l[i]) * wb[w_idx];
-                    atomicAdd(&y[compute_idx(num_activations,z,j + k)], result);
+                    atomicAdd(&y[compute_idx(z,j + k, num_activations)], result);
                 }
             }
         }

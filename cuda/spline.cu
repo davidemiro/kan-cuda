@@ -12,7 +12,7 @@ using namespace std;
 
 
 //2d tensor idx computation
-__device__ size_t compute_idx(int dim, int i, int j){
+__device__ size_t compute_idx(int i, int j, int dim){
     return i * dim + j;
 }
 
