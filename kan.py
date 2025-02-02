@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-#import cuda_kan
-import cpp_kan
+import cuda_kan
+#import cpp_kan
 
 
 class KolmogorovArnoldLayer(nn.Module):
