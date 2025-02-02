@@ -76,6 +76,8 @@ namespace cuda_kan {
 
         if (i < num_input && z < batch_size && j < num_activations) {
 
+            printf("%d %d %d",z,i,j);
+
             float result = 1.0;
 
             size_t x_idx = compute_idx(num_input, z, i);
@@ -142,7 +144,8 @@ namespace cuda_kan {
         cudaDeviceSynchronize();
 
 
-        if (num_input < CHUNK && num_activations < CHUNK){
+        if (num_input <= CHUNK && num_activations <= CHUNK){
+            printf("A")
             dim3 thread_blocks(num_input, num_activations);
             kan_activation_function<<<batch_size,thread_blocks>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
 
