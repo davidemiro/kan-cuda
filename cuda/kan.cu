@@ -40,8 +40,6 @@ namespace cuda_kan {
         float* x_l;
         float* bsp_l;
 
-        printf("C");
-
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
 
             bsp_l = cache_ptr;
@@ -76,16 +74,15 @@ namespace cuda_kan {
         int i = threadIdx.x;
         int j = threadIdx.y;
 
-        printf("B");
         if (i < num_input && z < batch_size && j < num_activations) {
 
 
 
             float result = 1.0;
 
-            size_t x_idx = compute_idx(num_input, z, i);
-            size_t y_idx = compute_idx(num_activations,z,j);
-            size_t w_idx = compute_idx(num_activations, i, j);
+            size_t x_idx = compute_idx(z, i, num_input);
+            size_t y_idx = compute_idx(z,j, num_activations);
+            size_t w_idx = compute_idx(i, j, num_activations);
 
             result = spline(cps, b_spline_basis, z, i, j, DIMS) * ws[w_idx] + silu(x[x_idx]) * wb[w_idx];
             atomicAdd(&y[y_idx], result);

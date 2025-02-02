@@ -62,33 +62,30 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     }
     __syncthreads();
 
-    printf("E");
-
     if(z >= batch_size || i >= num_input){
         return;
     }
 
     for(int d = 0; d <= degree; d++) {
-        for (int j = 0; j < num_knots; j++) {
+        for (int j = 0; j < num_knots ; j++) {
 
             idx = compute_idx_base(z, i, j, d, DIMS);
-            t = x[compute_idx(num_input, z, i)];
+            t = x[compute_idx(z, i, num_inputs)];
             if (d == 0) {
-                if (knots[compute_idx(num_knots, i, j)]<= t && t < knots[compute_idx(num_knots, i, j + 1)]) {
+                if (knots[j]<= t && t < knots[j + 1]) {
                     b_spline_basis[idx] = 1.0;
                 } else {
                     b_spline_basis[idx] = 0.0;
                 }
             } else {
 
-                if (knots[compute_idx(num_knots, i, j + d)] != knots[compute_idx(num_knots, i, j)]) {
+                if (knots[j + d] != knots[j]) {
                     idx_ = compute_idx_base(z, i, j, d - 1, DIMS);
-                    leftTerm = (t - knots[compute_idx(num_knots,i,j)]) / (knots[compute_idx(num_knots, i, j + d)] - knots[compute_idx(num_knots, i, j)] * b_spline_basis[idx_]);
+                    leftTerm = (t - knots[j]) / (knots[j + d] - knots[j] * b_spline_basis[idx_]);
                 }
-
-                if (knots[compute_idx(num_knots, i, j + d + 1)] != knots[compute_idx(num_knots, i, j + 1)]) {
+                if (knots[j + d + 1] != knots[j + 1]) {
                     idx_ = compute_idx_base(z, i, j + 1, d - 1, DIMS);
-                    rightTerm = (knots[compute_idx(num_knots, i, j + d + 1)] - t) / (knots[compute_idx(num_knots, i, j + d + 1)] - knots[compute_idx(num_knots, i, j + 1)]) * b_spline_basis[idx_];
+                    rightTerm = (knots[j + d + 1] - t) / (knots[j + d + 1] - knots[j + 1]) * b_spline_basis[idx_];
                 }
                 b_spline_basis[idx] = leftTerm + rightTerm;
             }
@@ -96,7 +93,6 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     }
 
 }
-
 
 __device__ float spline(float* cps, float* b_spline_basis, int z, int i, int j, int batch_size, int num_input, int num_knots, int degree) {
     /*
