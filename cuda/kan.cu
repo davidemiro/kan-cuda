@@ -161,7 +161,7 @@ namespace cuda_kan {
         }
 
         cudaDeviceSynchronize();
-        return y;
+        return b_spline_basis;
 
 
     }
