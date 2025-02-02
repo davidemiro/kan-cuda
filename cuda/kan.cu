@@ -40,6 +40,8 @@ namespace cuda_kan {
         float* x_l;
         float* bsp_l;
 
+        printf("C");
+
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
 
             bsp_l = cache_ptr;
@@ -74,9 +76,10 @@ namespace cuda_kan {
         int i = threadIdx.x;
         int j = threadIdx.y;
 
+        printf("B");
         if (i < num_input && z < batch_size && j < num_activations) {
 
-            printf("%d %d %d",z,i,j);
+
 
             float result = 1.0;
 
