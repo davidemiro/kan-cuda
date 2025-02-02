@@ -52,7 +52,7 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     extern __shared__ float cache_ptr[];
     float* knots_cache = cache_ptr;
 
-    printf("D");
+
 
     //coalesce load to cache, using grid-stride loop to handle the case batch_size * num_input < num_knots
     for (int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -61,6 +61,8 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
         knots_cache[x] = knots[x];
     }
     __syncthreads();
+
+    printf("E");
 
     if(z >= batch_size || i >= num_input){
         return;
