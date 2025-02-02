@@ -145,7 +145,7 @@ namespace cuda_kan {
 
 
         if (num_input <= CHUNK && num_activations <= CHUNK){
-            printf("A")
+            printf("A");
             dim3 thread_blocks(num_input, num_activations);
             kan_activation_function<<<batch_size,thread_blocks>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr, b_spline_basis_ptr, degree, batch_size, num_input, num_activations, num_knots);
 
