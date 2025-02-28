@@ -70,7 +70,7 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
         for (int j = 0; j < num_knots ; j++) {
 
             idx = compute_idx_base(z, i, j, d, DIMS);
-            t = x[compute_idx(z, i, num_inputs)];
+            t = x[compute_idx(z, i, num_input)];
             if (d == 0) {
                 if (knots[j]<= t && t < knots[j + 1]) {
                     b_spline_basis[idx] = 1.0;
