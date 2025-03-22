@@ -38,6 +38,7 @@ namespace cuda_kan {
         float result = 0.0;
         extern __shared__ float cache_ptr[];
         float* bsp_l = cache_ptr;
+        float* x_l = &bsp_l[num_knots * num_input];
 
         if(i == 0) {
 
@@ -49,7 +50,7 @@ namespace cuda_kan {
 
         }
 
-        float* x_l = &bsp_l[num_knots * num_input];
+
 
 
         //printf("blockIdx: %d blockDimx: %d blockIdy: %d blockDimy: %d threadIdx: %d\n",blockIdx.x, blockDim.x, blockIdx.y, blockDim.y, threadIdx.x);
