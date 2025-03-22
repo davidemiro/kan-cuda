@@ -12,13 +12,13 @@ using namespace std;
 
 
 //2d tensor idx computation
-__device__ size_t compute_idx(int i, int j, int dim){
+__device__ int compute_idx(int i, int j, int dim){
     return i * dim + j;
 }
 
 
 //compute idx b_spline_basis
-__device__ size_t compute_idx_base(int z, int i, int j, int d,
+__device__ int compute_idx_base(int z, int i, int j, int d,
                                       int batch_size, int num_input, int num_knots, int degree){
 
     int stride_degree = num_input * num_knots * batch_size;
