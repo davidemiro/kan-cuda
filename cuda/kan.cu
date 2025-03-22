@@ -47,11 +47,15 @@ namespace cuda_kan {
             bsp_l = cache_ptr;
             x_l = &bsp_l[num_knots * num_input];
 
+            printf("A\n");
+            bsp_l[0] = 0.2;
+
+            printf("B\n");
+
 
             //load b_spline_ptr(1, 1, CHUNK, num_knots)
             for (int j = threadIdx.x; j < num_knots; j += CHUNK) {
                 bsp_l[compute_idx(i,j, num_knots)] = b_spline_basis[compute_idx_base(z, i, j, degree, DIMS)];
-                printf("X");
             }
             printf("F");
             __syncthreads();
