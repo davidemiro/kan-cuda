@@ -17,7 +17,7 @@ class KolmogorovArnoldNetworkTests(unittest.TestCase):
 
         print(device)
 
-        x = torch.rand(batch_size,input_dim)
+        x = torch.rand(batch_size,input_dim).to(device)
 
         layer = kan_impl.KolmogorovArnoldLayer(input_dim=input_dim,output_dim=output_dim,num_knots=grid, range_knots=[0,100], degree=k, device=device)
 
