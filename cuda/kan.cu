@@ -36,22 +36,25 @@ namespace cuda_kan {
         int  w_idx, stride;
 
         float result = 0.0;
-        extern __shared__ float* cache_ptr;
-        float* x_l;
-        float* bsp_l;
+        extern __shared__ float cache_ptr[];
+        float* bsp_l = cache_ptr;
+
+        if(i == 0) {
+
+            printf("batch_size %d", batch_size);
+            printf("num_knots %d", num_knots);
+            printf("num_activations %d", num_activations);
+            printf("num_input %d", num_input);
+            printf("degree %d", degree);
+
+        }
+
+        float* x_l = &bsp_l[num_knots * num_input];
+
 
         //printf("blockIdx: %d blockDimx: %d blockIdy: %d blockDimy: %d threadIdx: %d\n",blockIdx.x, blockDim.x, blockIdx.y, blockDim.y, threadIdx.x);
 
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
-
-            bsp_l = cache_ptr;
-            x_l = &bsp_l[num_knots * num_input];
-
-            printf("A\n");
-            bsp_l[0] = 0.2;
-
-            printf("B\n");
-
 
             //load b_spline_ptr(1, 1, CHUNK, num_knots)
             for (int j = threadIdx.x; j < num_knots; j += CHUNK) {
