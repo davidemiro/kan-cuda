@@ -41,7 +41,6 @@ namespace cuda_kan {
         float* bsp_l;
 
         //printf("blockIdx: %d blockDimx: %d blockIdy: %d blockDimy: %d threadIdx: %d\n",blockIdx.x, blockDim.x, blockIdx.y, blockDim.y, threadIdx.x);
-        printf("batch_size: %d\n", batch_size);
 
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
 
