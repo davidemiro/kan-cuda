@@ -7,7 +7,7 @@ import kan
 class KolmogorovArnoldNetworkTests(unittest.TestCase):
 
     def test_speed_kan(self):
-        batch_size = 256
+        batch_size = 1024
         input_dim = 512
         output_dim = 1024
         grid = 4
