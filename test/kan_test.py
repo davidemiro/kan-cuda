@@ -2,7 +2,7 @@ import unittest
 import torch
 from kan import *
 import time
-import cpp_kan
+import cuda_kan
 
 class KolmogorovArnoldNetworkTests(unittest.TestCase):
 
