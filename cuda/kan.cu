@@ -160,7 +160,7 @@ namespace cuda_kan {
             cache_size = CHUNK * CHUNK * num_knots * sizeof(float);
             dim3 grid_blocks(batch_size, ceil(num_input / CHUNK));
             printf("B");
-            printf("num_input %d",num_input)
+            printf("num_input %d",num_input);
             kan_activation_function_chunk<<<grid_blocks, CHUNK, cache_size>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr,
                                                                               b_spline_basis_ptr, degree, batch_size,
                                                                               num_input, num_activations, num_knots);
