@@ -52,6 +52,8 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     extern __shared__ float cache_ptr[];
     float* knots_cache = cache_ptr;
 
+    printf("DSa");
+
 
 
     //coalesce load to cache, using grid-stride loop to handle the case batch_size * num_input < num_knots
