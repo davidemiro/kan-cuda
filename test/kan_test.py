@@ -13,12 +13,14 @@ class KolmogorovArnoldNetworkTests(unittest.TestCase):
         grid = 4
         k = 3
 
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         x = torch.rand(batch_size,input_dim)
 
-        layer = kan_impl.KolmogorovArnoldLayer(input_dim=input_dim,output_dim=output_dim,num_knots=grid, range_knots=[0,100], degree=3)
+        layer = kan_impl.KolmogorovArnoldLayer(input_dim=input_dim,output_dim=output_dim,num_knots=grid, range_knots=[0,100], degree=k)
 
 
-        official_layer = kan.KAN(width=[output_dim], grid=3, k=3, seed=42, device=device)
+        official_layer = kan.KAN(width=[output_dim], grid=grid, k=k, seed=42, device="cuda")
 
         start = time.time();
         layer(x)
