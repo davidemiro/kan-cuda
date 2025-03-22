@@ -50,18 +50,19 @@ namespace cuda_kan {
 
             //load b_spline_ptr(1, 1, CHUNK, num_knots)
             for (int j = threadIdx.x; j < num_knots; j += CHUNK) {
+                printf("E");
                 bsp_l[compute_idx(i,j, num_knots)] = b_spline_basis[compute_idx_base(z, i, j, degree, DIMS)];
             }
-            printf("E");
+            printf("F");
             __syncthreads();
 
-            printf("F");
+            printf("G");
             //load x(CHUNK)
             x_l[i] = x[compute_idx(z, i + blockIdx.y * CHUNK, num_input)];
             __syncthreads();
 
 
-            printf("F");
+            printf("H");
             for (int j = 0; j < num_activations; j += CHUNK) {
 
                 stride = fminf(CHUNK, num_activations - j);
