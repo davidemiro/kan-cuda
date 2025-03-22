@@ -40,23 +40,24 @@ namespace cuda_kan {
         float* x_l;
         float* bsp_l;
 
-        printf("blockIdx: %d blockDimx: %d blockIdy: %d blockDimy: %d threadIdx: %d",blockIdx.x, blockDim.x, blockIdx.y, blockDim.y, threadIdx.x);
-        printf("num_input: %d", num_input);
+        printf("blockIdx: %d blockDimx: %d blockIdy: %d blockDimy: %d threadIdx: %d\n",blockIdx.x, blockDim.x, blockIdx.y, blockDim.y, threadIdx.x);
+        printf("num_input: %d\n", num_input);
 
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
 
-            printf("C");
             bsp_l = cache_ptr;
+            printf("C");
             x_l = &bsp_l[num_knots * num_input];
+            printf("D");
 
             //load b_spline_ptr(1, 1, CHUNK, num_knots)
             for (int j = threadIdx.x; j < num_knots; j += CHUNK) {
                 bsp_l[compute_idx(i,j, num_knots)] = b_spline_basis[compute_idx_base(z, i, j, degree, DIMS)];
             }
-            printf("D");
+            printf("E");
             __syncthreads();
 
-            printf("E");
+            printf("F");
             //load x(CHUNK)
             x_l[i] = x[compute_idx(z, i + blockIdx.y * CHUNK, num_input)];
             __syncthreads();
@@ -159,6 +160,7 @@ namespace cuda_kan {
             cache_size = CHUNK * CHUNK * num_knots * sizeof(float);
             dim3 grid_blocks(batch_size, ceil(num_input / CHUNK));
             printf("B");
+            printf("num_input %d",num_input)
             kan_activation_function_chunk<<<grid_blocks, CHUNK, cache_size>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr,
                                                                               b_spline_basis_ptr, degree, batch_size,
                                                                               num_input, num_activations, num_knots);
