@@ -11,3 +11,4 @@ setuptools==75.6.0
 sympy==1.13.3
 torch==2.2.2
 typing_extensions==4.12.2
+pykan==0.2.8
