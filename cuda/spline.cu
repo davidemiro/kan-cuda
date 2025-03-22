@@ -13,6 +13,7 @@ using namespace std;
 
 //2d tensor idx computation
 __device__ int compute_idx(int i, int j, int dim){
+    printf("X");
     return i * dim + j;
 }
 
