@@ -40,16 +40,6 @@ namespace cuda_kan {
         float* bsp_l = cache_ptr;
         float* x_l = &bsp_l[num_knots * num_input];
 
-        if(i == 0) {
-
-            printf("batch_size %d", batch_size);
-            printf("num_knots %d", num_knots);
-            printf("num_activations %d", num_activations);
-            printf("num_input %d", num_input);
-            printf("degree %d", degree);
-
-        }
-
 
 
 
@@ -61,16 +51,13 @@ namespace cuda_kan {
             for (int j = threadIdx.x; j < num_knots; j += CHUNK) {
                 bsp_l[compute_idx(i,j, num_knots)] = b_spline_basis[compute_idx_base(z, i, j, degree, DIMS)];
             }
-            printf("F");
             __syncthreads();
 
-            printf("G");
             //load x(CHUNK)
             x_l[i] = x[compute_idx(z, i + blockIdx.y * CHUNK, num_input)];
             __syncthreads();
 
 
-            printf("H");
             for (int j = 0; j < num_activations; j += CHUNK) {
 
                 stride = fminf(CHUNK, num_activations - j);
@@ -166,8 +153,6 @@ namespace cuda_kan {
         }else {
             cache_size = CHUNK * CHUNK * num_knots * sizeof(float);
             dim3 grid_blocks(batch_size, ceil(num_input / CHUNK));
-            printf("B");
-            printf("num_input %d",num_input);
             kan_activation_function_chunk<<<grid_blocks, CHUNK, cache_size>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr,
                                                                               b_spline_basis_ptr, degree, batch_size,
                                                                               num_input, num_activations, num_knots);
