@@ -40,15 +40,14 @@ namespace cuda_kan {
         float* x_l;
         float* bsp_l;
 
-        printf("blockIdx: %d blockDimx: %d blockIdy: %d blockDimy: %d threadIdx: %d\n",blockIdx.x, blockDim.x, blockIdx.y, blockDim.y, threadIdx.x);
-        printf("num_input: %d\n", num_input);
+        //printf("blockIdx: %d blockDimx: %d blockIdy: %d blockDimy: %d threadIdx: %d\n",blockIdx.x, blockDim.x, blockIdx.y, blockDim.y, threadIdx.x);
+        printf("batch_size: %d\n", batch_size);
 
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
 
             bsp_l = cache_ptr;
-            printf("C");
             x_l = &bsp_l[num_knots * num_input];
-            printf("D");
+
 
             //load b_spline_ptr(1, 1, CHUNK, num_knots)
             for (int j = threadIdx.x; j < num_knots; j += CHUNK) {
@@ -164,6 +163,7 @@ namespace cuda_kan {
             kan_activation_function_chunk<<<grid_blocks, CHUNK, cache_size>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr,
                                                                               b_spline_basis_ptr, degree, batch_size,
                                                                               num_input, num_activations, num_knots);
+
         }
 
         cudaDeviceSynchronize();
