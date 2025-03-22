@@ -5,10 +5,9 @@ import cuda_kan
 
 
 class KolmogorovArnoldLayer(nn.Module):
-    def __init__(self, input_dim, output_dim, num_knots, range_knots, degree=3):
+    def __init__(self, input_dim, output_dim, num_knots, range_knots, degree, device):
         super(KolmogorovArnoldLayer, self).__init__()
 
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.degree = degree
