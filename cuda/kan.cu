@@ -42,6 +42,7 @@ namespace cuda_kan {
 
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
 
+            printf("C");
             bsp_l = cache_ptr;
             x_l = &bsp_l[num_knots * num_input];
 
@@ -49,13 +50,16 @@ namespace cuda_kan {
             for (int j = threadIdx.x; j < num_knots; j += CHUNK) {
                 bsp_l[compute_idx(i,j, num_knots)] = b_spline_basis[compute_idx_base(z, i, j, degree, DIMS)];
             }
+            printf("D");
             __syncthreads();
 
+            printf("E");
             //load x(CHUNK)
             x_l[i] = x[compute_idx(z, i + blockIdx.y * CHUNK, num_input)];
             __syncthreads();
 
 
+            printf("F");
             for (int j = 0; j < num_activations; j += CHUNK) {
 
                 stride = fminf(CHUNK, num_activations - j);
@@ -151,6 +155,7 @@ namespace cuda_kan {
         }else {
             cache_size = CHUNK * CHUNK * num_knots * sizeof(float);
             dim3 grid_blocks(batch_size, ceil(num_input / CHUNK));
+            printf("B")
             kan_activation_function_chunk<<<grid_blocks, CHUNK, cache_size>>>(x_ptr, y_ptr, wb_ptr, ws_ptr, cps_ptr,
                                                                               b_spline_basis_ptr, degree, batch_size,
                                                                               num_input, num_activations, num_knots);
