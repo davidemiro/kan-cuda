@@ -36,7 +36,7 @@ print(device)
 
 batch_size = 256
 num_input = 512
-num_knots = 16
+num_knots = 4
 num_output = 1024
 degree = 3
 
