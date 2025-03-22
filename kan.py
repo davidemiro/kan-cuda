@@ -47,7 +47,6 @@ print(x)
 layer = KolmogorovArnoldLayer(num_input,num_output,num_knots, [0,100], degree)
 
 y = layer(x)
-y.to("cpu")
 
 
 
