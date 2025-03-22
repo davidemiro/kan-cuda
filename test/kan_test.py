@@ -15,7 +15,7 @@ class KolmogorovArnoldNetworkTests(unittest.TestCase):
 
         x = torch.rand(batch_size,input_dim)
 
-        layer = KolmogorovArnoldLayer(input_dim=input_dim,output_dim=output_dim,num_knots=grid, knots_range=[0,100], degree=3)
+        layer = KolmogorovArnoldLayer(input_dim=input_dim,output_dim=output_dim,num_knots=grid, range_knots=[0,100], degree=3)
 
         official_layer = KAN(width=[output_dim], grid=3, k=3, seed=42, device=device)
 
