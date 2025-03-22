@@ -20,7 +20,7 @@ class KolmogorovArnoldNetworkTests(unittest.TestCase):
         layer = kan_impl.KolmogorovArnoldLayer(input_dim=input_dim,output_dim=output_dim,num_knots=grid, range_knots=[0,100], degree=k)
 
 
-        official_layer = kan.KAN(width=[output_dim], grid=grid, k=k, seed=42, device="cuda")
+        official_layer = kan.KAN(width=[output_dim], grid=grid, k=k, seed=42, device=device)
 
         start = time.time();
         layer(x)
