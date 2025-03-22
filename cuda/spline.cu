@@ -52,7 +52,6 @@ __global__ void b_spline_base(float* b_spline_basis, float* x, int batch_size, i
     extern __shared__ float cache_ptr[];
     float* knots_cache = cache_ptr;
 
-    printf("DSa");
 
 
 
