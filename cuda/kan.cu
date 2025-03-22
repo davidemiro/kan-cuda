@@ -40,6 +40,9 @@ namespace cuda_kan {
         float* x_l;
         float* bsp_l;
 
+        printf("blockIdx: %d blockDimx: %d blockIdy: %d blockDimy: %d threadIdx: %d",blockIdx.x, blockDim.x, blockIdx.y, blockDim.y, threadIdx.x);
+        printf("num_input: %d", num_input);
+
         if(threadIdx.x + blockIdx.y * blockDim.y < num_input) {
 
             printf("C");
