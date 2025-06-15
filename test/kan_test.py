@@ -2,7 +2,6 @@ import unittest
 import torch
 import kan_impl
 import time
-import kan
 
 class KolmogorovArnoldNetworkTests(unittest.TestCase):
 
