@@ -1,6 +1,7 @@
 import unittest
 import torch
 import kan_impl
+import kan
 import time
 
 class KolmogorovArnoldNetworkTests(unittest.TestCase):
@@ -21,7 +22,7 @@ class KolmogorovArnoldNetworkTests(unittest.TestCase):
         layer = kan_impl.KolmogorovArnoldLayer(input_dim=input_dim,output_dim=output_dim,num_knots=grid, range_knots=[0,100], degree=k, device=device)
 
 
-        official_layer = kan_impl.KAN(width=[output_dim], grid=grid, k=k, seed=42, device=device)
+        official_layer = kan.KAN(width=[output_dim], grid=grid, k=k, seed=42, device=device)
 
         start = time.time();
         layer(x)
